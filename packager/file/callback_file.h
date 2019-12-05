@@ -30,10 +30,13 @@ class CallbackFile : public File {
   bool Tell(uint64_t* position) override;
   /// @}
 
+  static bool Delete(const std::string& file_name);
+
  protected:
   ~CallbackFile() override;
 
   bool Open() override;
+  bool Delete();
 
  private:
   CallbackFile(const CallbackFile&) = delete;
@@ -42,6 +45,7 @@ class CallbackFile : public File {
   const BufferCallbackParams* callback_params_ = nullptr;
   std::string name_;
   std::string file_mode_;
+  uint64_t position_;
 };
 
 }  // namespace shaka
