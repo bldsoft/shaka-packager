@@ -3,6 +3,7 @@
 *.VC.db
 *.vcxproj*
 */.vs/*
+*/.vscode/*
 *~
 .DS_store
 .cproject
