@@ -64,6 +64,10 @@ File* CreateCallbackFile(const char* file_name, const char* mode) {
   return new CallbackFile(file_name, mode);
 }
 
+bool DeleteCallbackFile(const char* file_name) {
+  return CallbackFile::Delete(file_name);
+}
+
 File* CreateLocalFile(const char* file_name, const char* mode) {
   return new LocalFile(file_name, mode);
 }
@@ -125,7 +129,7 @@ static const FileTypeInfo kFileTypeInfo[] = {
     },
     {kUdpFilePrefix, &CreateUdpFile, nullptr, nullptr},
     {kMemoryFilePrefix, &CreateMemoryFile, &DeleteMemoryFile, nullptr},
-    {kCallbackFilePrefix, &CreateCallbackFile, nullptr, nullptr},
+    {kCallbackFilePrefix, &CreateCallbackFile, &DeleteCallbackFile, nullptr},
     {kHttpFilePrefix, &CreateHttpFile, nullptr, nullptr},
     {kHttpsFilePrefix, &CreateHttpsFile, nullptr, nullptr},
 };
