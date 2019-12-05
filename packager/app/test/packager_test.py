@@ -431,7 +431,7 @@ class PackagerAppTest(unittest.TestCase):
                 time_shift_buffer_depth=0.0,
                 preserved_segments_outside_live_window=0,
                 utc_timings=None,
-                generate_static_mpd=False,
+                generate_static_live_mpd=False,
                 ad_cues=None,
                 default_language=None,
                 segment_duration=1.0,
@@ -508,8 +508,8 @@ class PackagerAppTest(unittest.TestCase):
     if utc_timings:
       flags += ['--utc_timings', utc_timings]
 
-    if generate_static_mpd:
-      flags += ['--generate_static_mpd']
+    if generate_static_live_mpd:
+      flags += ['--generate_static_live_mpd']
 
     if ad_cues:
       flags += ['--ad_cues', ad_cues]
@@ -726,6 +726,21 @@ class PackagerFunctionalTest(PackagerAppTest):
         self._GetStreams(['audio', 'video'], language='por-BR', hls=True),
         self._GetFlags(output_dash=True, output_hls=True))
     self._CheckTestResults('audio-video-with-language-override-with-subtag')
+
+  def testMp4TrailingMoov(self):
+    self.assertPackageSuccess(
+        self._GetStreams(['audio', 'video'],
+                         test_files=['bear-640x360-trailing-moov.mp4']),
+        self._GetFlags(output_dash=True, output_hls=True))
+    self._CheckTestResults('mp4-trailing-moov')
+
+  def testVideoNonSquarePixel(self):
+    self.assertPackageSuccess(
+        self._GetStreams(
+            ['video'],
+            test_files=['bear-640x360-non_square_pixel-with_pasp.mp4']),
+        self._GetFlags(output_dash=True, output_hls=True))
+    self._CheckTestResults('video-non-square-pixel')
 
   def testAacHe(self):
     self.assertPackageSuccess(
@@ -1076,7 +1091,7 @@ class PackagerFunctionalTest(PackagerAppTest):
             output_format='mp4')
     ]
     flags = self._GetFlags(output_dash=True, output_hls=True,
-                           generate_static_mpd=True, ad_cues='1.5')
+                           generate_static_live_mpd=True, ad_cues='1.5')
     self.assertPackageSuccess(streams, flags)
     # Mpd cannot be validated right now since we don't generate determinstic
     # mpd with multiple inputs due to thread racing.
@@ -1212,14 +1227,14 @@ class PackagerFunctionalTest(PackagerAppTest):
     self.assertPackageSuccess(streams, flags)
     self._CheckTestResults('hdr10-with-encryption')
 
-  def testDolbyVisionWithEncryption(self):
+  def testDolbyVisionProfile5WithEncryption(self):
     streams = [
-        self._GetStream('video', test_file='426x240-dvh1.mp4')
+        self._GetStream('video', test_file='sparks_dovi_5.mp4')
     ]
     flags = self._GetFlags(encryption=True, output_dash=True, output_hls=True)
 
     self.assertPackageSuccess(streams, flags)
-    self._CheckTestResults('dvh1-with-encryption')
+    self._CheckTestResults('dolby-vision-profile-5-with-encryption')
 
   def testVp8Mp4WithEncryption(self):
     streams = [
@@ -1427,7 +1442,7 @@ class PackagerFunctionalTest(PackagerAppTest):
   def testLiveStaticProfile(self):
     self.assertPackageSuccess(
         self._GetStreams(['audio', 'video'], segmented=True),
-        self._GetFlags(output_dash=True, generate_static_mpd=True))
+        self._GetFlags(output_dash=True, generate_static_live_mpd=True))
     self._CheckTestResults('live-static-profile')
 
   def testLiveStaticProfileWithTimeInSegmentName(self):
@@ -1435,7 +1450,7 @@ class PackagerFunctionalTest(PackagerAppTest):
         self._GetStreams(['audio', 'video'],
                          segmented=True,
                          using_time_specifier=True),
-        self._GetFlags(output_dash=True, generate_static_mpd=True))
+        self._GetFlags(output_dash=True, generate_static_live_mpd=True))
     self._CheckTestResults('live-static-profile-with-time-in-segment-name')
 
   def testLiveProfileAndEncryption(self):
