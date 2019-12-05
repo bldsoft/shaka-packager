@@ -11,7 +11,7 @@
 namespace shaka {
 
 CallbackFile::CallbackFile(const char* file_name, const char* mode)
-    : File(file_name), file_mode_(mode) {}
+    : File(file_name), file_mode_(mode), position_(0) {}
 
 CallbackFile::~CallbackFile() {}
 
@@ -33,12 +33,17 @@ int64_t CallbackFile::Write(const void* buffer, uint64_t length) {
     LOG(ERROR) << "Write function not defined.";
     return -1;
   }
-  return callback_params_->write_func(name_, buffer, length);
+  int64_t size = callback_params_->write_func(name_, buffer, length);
+  position_ += size;
+  return size;
 }
 
 int64_t CallbackFile::Size() {
-  LOG(INFO) << "CallbackFile does not support Size().";
-  return -1;
+  if (!callback_params_->write_func) {
+    LOG(ERROR) << "Write function not defined.";
+    return 0;
+  }
+  return callback_params_->write_func(name_, nullptr, 1);
 }
 
 bool CallbackFile::Flush() {
@@ -52,8 +57,9 @@ bool CallbackFile::Seek(uint64_t position) {
 }
 
 bool CallbackFile::Tell(uint64_t* position) {
-  VLOG(1) << "CallbackFile does not support Tell().";
-  return false;
+  //VLOG(1) << "CallbackFile does not support Tell().";
+  *position = position_;
+  return true;
 }
 
 bool CallbackFile::Open() {
@@ -62,7 +68,24 @@ bool CallbackFile::Open() {
     LOG(ERROR) << "CallbackFile does not support file mode " << file_mode_;
     return false;
   }
+  position_ = 0;
   return ParseCallbackFileName(file_name(), &callback_params_, &name_);
+}
+
+bool CallbackFile::Delete() {
+  if (!callback_params_->write_func) {
+    LOG(ERROR) << "Write function not defined.";
+    return false;
+  }
+  return callback_params_->write_func(name_, nullptr, 0) != 0;
+}
+
+bool CallbackFile::Delete(const std::string& file_name) {
+  CallbackFile file(file_name.c_str(), "r");
+  if(file.Open()){
+    return file.Delete();
+  }
+  return false;
 }
 
 }  // namespace shaka
