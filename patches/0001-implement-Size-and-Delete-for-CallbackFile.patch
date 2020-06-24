@@ -1,0 +1,161 @@
+From b1a6fb16eb934eec120d98b45d1d09729aa1baa6 Mon Sep 17 00:00:00 2001
+From: Sergey Yarosh <s.yarosh@setplex.com>
+Date: Thu, 5 Dec 2019 15:27:04 +0300
+Subject: [PATCH] implement Size() and Delete() for CallbackFile
+
+---
+ build.sh                       |  4 ++++
+ build_static.sh                |  4 ++++
+ packager/file/callback_file.cc | 35 ++++++++++++++++++++++++++++------
+ packager/file/callback_file.h  |  4 ++++
+ packager/file/file.cc          |  6 +++++-
+ 5 files changed, 46 insertions(+), 7 deletions(-)
+ create mode 100755 build.sh
+ create mode 100755 build_static.sh
+
+diff --git a/build.sh b/build.sh
+new file mode 100755
+index 0000000000..7f500253b5
+--- /dev/null
++++ b/build.sh
+@@ -0,0 +1,4 @@
++#!/bin/sh
++GYP_DEFINES='clang=0 libpackager_type=shared_library' gclient runhooks
++ninja -C out/Release
++ninja -C out/Debug
+\ No newline at end of file
+diff --git a/build_static.sh b/build_static.sh
+new file mode 100755
+index 0000000000..5adb315bb8
+--- /dev/null
++++ b/build_static.sh
+@@ -0,0 +1,4 @@
++#!/bin/sh
++GYP_DEFINES='clang=0' gclient runhooks
++ninja -C out/Release
++ninja -C out/Debug
+\ No newline at end of file
+diff --git a/packager/file/callback_file.cc b/packager/file/callback_file.cc
+index 55dae0a98e..99eb9bd8ff 100644
+--- a/packager/file/callback_file.cc
++++ b/packager/file/callback_file.cc
+@@ -11,7 +11,7 @@
+ namespace shaka {
+ 
+ CallbackFile::CallbackFile(const char* file_name, const char* mode)
+-    : File(file_name), file_mode_(mode) {}
++    : File(file_name), file_mode_(mode), position_(0) {}
+ 
+ CallbackFile::~CallbackFile() {}
+ 
+@@ -33,12 +33,17 @@ int64_t CallbackFile::Write(const void* buffer, uint64_t length) {
+     LOG(ERROR) << "Write function not defined.";
+     return -1;
+   }
+-  return callback_params_->write_func(name_, buffer, length);
++  int64_t size = callback_params_->write_func(name_, buffer, length);
++  position_ += size;
++  return size;
+ }
+ 
+ int64_t CallbackFile::Size() {
+-  LOG(INFO) << "CallbackFile does not support Size().";
+-  return -1;
++  if (!callback_params_->write_func) {
++    LOG(ERROR) << "Write function not defined.";
++    return 0;
++  }
++  return callback_params_->write_func(name_, nullptr, 1);
+ }
+ 
+ bool CallbackFile::Flush() {
+@@ -52,8 +57,9 @@ bool CallbackFile::Seek(uint64_t position) {
+ }
+ 
+ bool CallbackFile::Tell(uint64_t* position) {
+-  VLOG(1) << "CallbackFile does not support Tell().";
+-  return false;
++  //VLOG(1) << "CallbackFile does not support Tell().";
++  *position = position_;
++  return true;
+ }
+ 
+ bool CallbackFile::Open() {
+@@ -62,7 +68,24 @@ bool CallbackFile::Open() {
+     LOG(ERROR) << "CallbackFile does not support file mode " << file_mode_;
+     return false;
+   }
++  position_ = 0;
+   return ParseCallbackFileName(file_name(), &callback_params_, &name_);
+ }
+ 
++bool CallbackFile::Delete() {
++  if (!callback_params_->write_func) {
++    LOG(ERROR) << "Write function not defined.";
++    return false;
++  }
++  return callback_params_->write_func(name_, nullptr, 0) != 0;
++}
++
++bool CallbackFile::Delete(const std::string& file_name) {
++  CallbackFile file(file_name.c_str(), "r");
++  if(file.Open()){
++    return file.Delete();
++  }
++  return false;
++}
++
+ }  // namespace shaka
+diff --git a/packager/file/callback_file.h b/packager/file/callback_file.h
+index 60e31a498f..724a177c76 100644
+--- a/packager/file/callback_file.h
++++ b/packager/file/callback_file.h
+@@ -30,10 +30,13 @@ class CallbackFile : public File {
+   bool Tell(uint64_t* position) override;
+   /// @}
+ 
++  static bool Delete(const std::string& file_name);
++
+  protected:
+   ~CallbackFile() override;
+ 
+   bool Open() override;
++  bool Delete();
+ 
+  private:
+   CallbackFile(const CallbackFile&) = delete;
+@@ -42,6 +45,7 @@ class CallbackFile : public File {
+   const BufferCallbackParams* callback_params_ = nullptr;
+   std::string name_;
+   std::string file_mode_;
++  uint64_t position_;
+ };
+ 
+ }  // namespace shaka
+diff --git a/packager/file/file.cc b/packager/file/file.cc
+index c0b4586e2d..ea5360f081 100644
+--- a/packager/file/file.cc
++++ b/packager/file/file.cc
+@@ -60,6 +60,10 @@ File* CreateCallbackFile(const char* file_name, const char* mode) {
+   return new CallbackFile(file_name, mode);
+ }
+ 
++bool DeleteCallbackFile(const char* file_name) {
++  return CallbackFile::Delete(file_name);
++}
++
+ File* CreateLocalFile(const char* file_name, const char* mode) {
+   return new LocalFile(file_name, mode);
+ }
+@@ -113,7 +117,7 @@ static const FileTypeInfo kFileTypeInfo[] = {
+     },
+     {kUdpFilePrefix, &CreateUdpFile, nullptr, nullptr},
+     {kMemoryFilePrefix, &CreateMemoryFile, &DeleteMemoryFile, nullptr},
+-    {kCallbackFilePrefix, &CreateCallbackFile, nullptr, nullptr},
++    {kCallbackFilePrefix, &CreateCallbackFile, &DeleteCallbackFile, nullptr},
+ };
+ 
+ base::StringPiece GetFileTypePrefix(base::StringPiece file_name) {
+-- 
+2.17.1
+
