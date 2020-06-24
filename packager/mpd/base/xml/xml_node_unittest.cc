@@ -18,6 +18,7 @@
 #include "packager/mpd/test/xml_compare.h"
 
 DECLARE_bool(segment_template_constant_duration);
+DECLARE_bool(dash_add_last_segment_number_when_needed);
 
 using ::testing::ElementsAre;
 
@@ -213,19 +214,70 @@ TEST(XmlNodeTest, AddContentProtectionElements) {
 TEST(XmlNodeTest, AddEC3AudioInfo) {
   MediaInfo::AudioInfo audio_info;
   audio_info.set_codec("ec-3");
-  audio_info.set_sampling_frequency(44100);
+  audio_info.set_sampling_frequency(48000);
   audio_info.mutable_codec_specific_data()->set_ec3_channel_map(0xF801);
+  audio_info.mutable_codec_specific_data()->set_ec3_channel_mpeg_value(
+      0xFFFFFFFF);
 
   RepresentationXmlNode representation;
   representation.AddAudioInfo(audio_info);
   EXPECT_THAT(
       representation.GetRawPtr(),
       XmlNodeEqual(
-          "<Representation audioSamplingRate=\"44100\">\n"
+          "<Representation audioSamplingRate=\"48000\">\n"
           "  <AudioChannelConfiguration\n"
           "   schemeIdUri=\n"
           "    \"tag:dolby.com,2014:dash:audio_channel_configuration:2011\"\n"
           "   value=\"F801\"/>\n"
+          "</Representation>\n"));
+}
+
+TEST(XmlNodeTest, AddEC3AudioInfoMPEGScheme) {
+  MediaInfo::AudioInfo audio_info;
+  audio_info.set_codec("ec-3");
+  audio_info.set_sampling_frequency(48000);
+  audio_info.mutable_codec_specific_data()->set_ec3_channel_map(0xF801);
+  audio_info.mutable_codec_specific_data()->set_ec3_channel_mpeg_value(6);
+
+  RepresentationXmlNode representation;
+  representation.AddAudioInfo(audio_info);
+  EXPECT_THAT(
+      representation.GetRawPtr(),
+      XmlNodeEqual(
+          "<Representation audioSamplingRate=\"48000\">\n"
+          "  <AudioChannelConfiguration\n"
+          "   schemeIdUri=\n"
+          "    \"urn:mpeg:mpegB:cicp:ChannelConfiguration\"\n"
+          "   value=\"6\"/>\n"
+          "</Representation>\n"));
+}
+
+TEST(XmlNodeTest, AddEC3AudioInfoMPEGSchemeJOC) {
+  MediaInfo::AudioInfo audio_info;
+  audio_info.set_codec("ec-3");
+  audio_info.set_sampling_frequency(48000);
+  audio_info.mutable_codec_specific_data()->set_ec3_channel_map(0xF801);
+  audio_info.mutable_codec_specific_data()->set_ec3_channel_mpeg_value(6);
+  audio_info.mutable_codec_specific_data()->set_ec3_joc_complexity(16);
+
+  RepresentationXmlNode representation;
+  representation.AddAudioInfo(audio_info);
+  EXPECT_THAT(
+      representation.GetRawPtr(),
+      XmlNodeEqual(
+          "<Representation audioSamplingRate=\"48000\">\n"
+          "  <AudioChannelConfiguration\n"
+          "   schemeIdUri=\n"
+          "    \"urn:mpeg:mpegB:cicp:ChannelConfiguration\"\n"
+          "   value=\"6\"/>\n"
+          "  <SupplementalProperty\n"
+          "   schemeIdUri=\n"
+          "    \"tag:dolby.com,2018:dash:EC3_ExtensionType:2018\"\n"
+          "   value=\"JOC\"/>\n"
+          "  <SupplementalProperty\n"
+          "   schemeIdUri=\n"
+          "    \"tag:dolby.com,2018:dash:EC3_ExtensionComplexityIndex:2018\"\n"
+          "   value=\"16\"/>\n"
           "</Representation>\n"));
 }
 
@@ -396,6 +448,32 @@ TEST_F(LiveSegmentTimelineTest, TwoSegmentInfoWithGap) {
                   "  </SegmentTemplate>"
                   "</Representation>"));
 }
+
+TEST_F(LiveSegmentTimelineTest, LastSegmentNumberSupplementalProperty) {        
+  const uint32_t kStartNumber = 1;                                              
+  const uint64_t kStartTime = 0;                                                
+  const uint64_t kDuration = 100;                                               
+  const uint64_t kRepeat = 9;                                                   
+                                                                                
+  std::list<SegmentInfo> segment_infos = {                                      
+      {kStartTime, kDuration, kRepeat},                                         
+  };                                                                            
+  RepresentationXmlNode representation;                                         
+  FLAGS_dash_add_last_segment_number_when_needed = true;                       
+                                                                                
+  ASSERT_TRUE(                                                                  
+      representation.AddLiveOnlyInfo(media_info_, segment_infos, kStartNumber));
+                                                                                
+  EXPECT_THAT(                                                                  
+      representation.GetRawPtr(),                                               
+      XmlNodeEqual("<Representation>"                                           
+                   "<SupplementalProperty schemeIdUri=\"http://dashif.org/"     
+                   "guidelines/last-segment-number\" value=\"10\"/>"            
+                   "  <SegmentTemplate media=\"$Number$.m4s\" "                 
+                   "                   startNumber=\"1\" duration=\"100\"/>"    
+                   "</Representation>"));                                       
+  FLAGS_dash_add_last_segment_number_when_needed = false;                                                                                                      
+}                      
 
 }  // namespace xml
 }  // namespace shaka

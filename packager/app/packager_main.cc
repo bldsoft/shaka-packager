@@ -268,18 +268,17 @@ bool ParseAdCues(const std::string& ad_cues, std::vector<Cuepoint>* cuepoints) {
   return true;
 }
 
-bool ParseProtectionSystems(
-    const std::string& protection_systems_str,
-    std::vector<EncryptionParams::ProtectionSystem>* protection_systems) {
-  protection_systems->clear();
+bool ParseProtectionSystems(const std::string& protection_systems_str,
+                            ProtectionSystem* protection_systems) {
+  *protection_systems = ProtectionSystem::kNone;
 
-  std::map<std::string, EncryptionParams::ProtectionSystem> mapping = {
-      {"common", EncryptionParams::ProtectionSystem::kCommonSystem},
-      {"commonsystem", EncryptionParams::ProtectionSystem::kCommonSystem},
-      {"fairplay", EncryptionParams::ProtectionSystem::kFairPlay},
-      {"marlin", EncryptionParams::ProtectionSystem::kMarlin},
-      {"playready", EncryptionParams::ProtectionSystem::kPlayReady},
-      {"widevine", EncryptionParams::ProtectionSystem::kWidevine},
+  std::map<std::string, ProtectionSystem> mapping = {
+      {"common", ProtectionSystem::kCommon},
+      {"commonsystem", ProtectionSystem::kCommon},
+      {"fairplay", ProtectionSystem::kFairPlay},
+      {"marlin", ProtectionSystem::kMarlin},
+      {"playready", ProtectionSystem::kPlayReady},
+      {"widevine", ProtectionSystem::kWidevine},
   };
 
   for (const std::string& protection_system :
@@ -291,7 +290,7 @@ bool ParseProtectionSystems(
                  << protection_system;
       return false;
     }
-    protection_systems->push_back(iter->second);
+    *protection_systems |= iter->second;
   }
   return true;
 }
@@ -343,12 +342,17 @@ base::Optional<PackagingParams> GetPackagingParams() {
     encryption_params.clear_lead_in_seconds = FLAGS_clear_lead;
     if (!GetProtectionScheme(&encryption_params.protection_scheme))
       return base::nullopt;
+    encryption_params.crypt_byte_block = FLAGS_crypt_byte_block;
+    encryption_params.skip_byte_block = FLAGS_skip_byte_block;
+
     encryption_params.crypto_period_duration_in_seconds =
         FLAGS_crypto_period_duration;
     encryption_params.vp9_subsample_encryption = FLAGS_vp9_subsample_encryption;
     encryption_params.stream_label_func = std::bind(
         &Packager::DefaultStreamLabelFunction, FLAGS_max_sd_pixels,
         FLAGS_max_hd_pixels, FLAGS_max_uhd1_pixels, std::placeholders::_1);
+    encryption_params.playready_extra_header_data =
+        FLAGS_playready_extra_header_data;
   }
   switch (encryption_params.key_provider) {
     case KeyProvider::kWidevine: {
@@ -457,6 +461,8 @@ base::Optional<PackagingParams> GetPackagingParams() {
       FLAGS_generate_dash_if_iop_compliant_mpd;
   mpd_params.allow_approximate_segment_timeline =
       FLAGS_allow_approximate_segment_timeline;
+  mpd_params.allow_codec_switching = FLAGS_allow_codec_switching;
+  mpd_params.include_mspr_pro = FLAGS_include_mspr_pro_for_playready;
 
   HlsParams& hls_params = packaging_params.hls_params;
   if (!GetHlsPlaylistType(FLAGS_hls_playlist_type, &hls_params.playlist_type)) {
@@ -470,6 +476,7 @@ base::Optional<PackagingParams> GetPackagingParams() {
       FLAGS_preserved_segments_outside_live_window;
   hls_params.default_language = FLAGS_default_language;
   hls_params.default_text_language = FLAGS_default_text_language;
+  hls_params.media_sequence_number = FLAGS_hls_media_sequence_number;
 
   TestParams& test_params = packaging_params.test_params;
   test_params.dump_stream_info = FLAGS_dump_stream_info;

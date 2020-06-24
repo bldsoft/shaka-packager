@@ -188,6 +188,11 @@ class MediaPlaylist {
   /// @return number of channels for audio. 0 is returned for video.
   virtual int GetNumChannels() const;
 
+  /// @return Dolby Digital Plus JOC decoding complexity, ETSI TS 103 420 v1.2.1
+  ///         Backwards-compatible object audio carriage using Enhanced AC-3
+  ///         Standard C.3.2.3.
+  virtual int GetEC3JocComplexity() const;
+
   /// @return true if |width| and |height| have been set with a valid
   ///         resolution values.
   virtual bool GetDisplayResolution(uint32_t* width, uint32_t* height) const;
@@ -236,7 +241,7 @@ class MediaPlaylist {
   std::string codec_;
   std::string language_;
   std::vector<std::string> characteristics_;
-  int media_sequence_number_ = 0;
+  uint32_t media_sequence_number_ = 0;
   bool inserted_discontinuity_tag_ = false;
   int discontinuity_sequence_number_ = 0;
 
