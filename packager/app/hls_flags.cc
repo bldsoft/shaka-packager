@@ -24,3 +24,6 @@ DEFINE_string(hls_playlist_type,
               "VOD, EVENT, or LIVE. This defines the EXT-X-PLAYLIST-TYPE in "
               "the HLS specification. For hls_playlist_type of LIVE, "
               "EXT-X-PLAYLIST-TYPE tag is omitted.");
+DEFINE_bool(hls_ext_x_program_date_time,
+              false,
+              "Enable generation of EXT-X-PROGRAM-DATE-TIME tag");

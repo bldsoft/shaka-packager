@@ -470,6 +470,7 @@ base::Optional<PackagingParams> GetPackagingParams() {
       FLAGS_preserved_segments_outside_live_window;
   hls_params.default_language = FLAGS_default_language;
   hls_params.default_text_language = FLAGS_default_text_language;
+  hls_params.ext_x_program_date_time = FLAGS_hls_ext_x_program_date_time;
 
   TestParams& test_params = packaging_params.test_params;
   test_params.dump_stream_info = FLAGS_dump_stream_info;
