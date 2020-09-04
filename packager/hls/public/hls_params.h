@@ -56,6 +56,8 @@ struct HlsParams {
   /// be populated from segment duration specified in ChunkingParams if not
   /// specified.
   double target_segment_duration = 0;
+  /// Enable generation of EXT-X-PROGRAM-DATE-TIME tag.
+  bool ext_x_program_date_time = false;
 };
 
 }  // namespace shaka

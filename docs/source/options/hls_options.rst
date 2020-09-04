@@ -51,3 +51,8 @@ HLS options
 
     Same as above, but this applies to text tracks only, and overrides the
     default language for text tracks.
+
+--hls_ext_x_program_date_time
+
+    Adds an EXT-X-PROGRAM-DATE-TIME tag to every Media Segment, with fixed UTC
+    timezone.
