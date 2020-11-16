@@ -85,3 +85,7 @@ HLS options
 
     Adds an EXT-X-PROGRAM-DATE-TIME tag to every Media Segment, with fixed UTC
     timezone.
+
+--hls_discontinuity_sequence_number <unsigned_number>
+
+  This parameter allows to set the initial EXT-X-DISCONTINUITY-SEQUENCE value.
