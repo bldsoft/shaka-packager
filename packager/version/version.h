@@ -23,7 +23,7 @@
  *
  * The micro version of shaka at compile time:
  */
-#define SHAKA_VERSION_MICRO (4)
+#define SHAKA_VERSION_MICRO (5)
 /**
  * SHAKA_VERSION_NANO:
  *
@@ -41,13 +41,13 @@
  * Check whether a shaka version equal to or greater than
  * major.minor.micro is present.
  */
-#define SHAKA_CHECK_VERSION(major,minor,micro)	\
-    (SHAKA_VERSION_MAJOR > (major) || \
-     (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR > (minor)) || \
-     (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
-      SHAKA_VERSION_MICRO >= (micro)) || \
-     (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
-      SHAKA_VERSION_MICRO + 1 == (micro) && SHAKA_VERSION_NANO > 0))
+#define SHAKA_CHECK_VERSION(major, minor, micro)                        \
+  (SHAKA_VERSION_MAJOR > (major) ||                                     \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR > (minor)) || \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO >= (micro)) ||                                  \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO + 1 == (micro) && SHAKA_VERSION_NANO > 0))
 
 namespace shaka {
 
