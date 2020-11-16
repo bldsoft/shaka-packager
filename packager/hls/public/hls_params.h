@@ -64,6 +64,7 @@ struct HlsParams {
   uint32_t media_sequence_number = 0;
   /// Enable generation of EXT-X-PROGRAM-DATE-TIME tag.
   bool ext_x_program_date_time = false;
+  uint32_t discontinuity_sequence_number = 0;
 };
 
 }  // namespace shaka
