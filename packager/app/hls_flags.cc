@@ -33,3 +33,7 @@ DEFINE_int32(hls_media_sequence_number,
 DEFINE_bool(hls_ext_x_program_date_time,
               false,
               "Enable generation of EXT-X-PROGRAM-DATE-TIME tag");
+DEFINE_int32(hls_discontinuity_sequence_number,
+             0,
+             "Number. This HLS-only parameter defines the initial "
+             "EXT-X-DISCONTINUITY-SEQUENCE value.");
