@@ -79,3 +79,7 @@ HLS options
 
     The EXT-X-MEDIA-SEQUENCE documentation can be read here:
     https://tools.ietf.org/html/rfc8216#section-4.3.3.2.
+
+--hls_discontinuity_sequence_number <unsigned_number>
+
+  This parameter allows to set the initial EXT-X-DISCONTINUITY-SEQUENCE value.

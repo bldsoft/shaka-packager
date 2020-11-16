@@ -33,3 +33,7 @@ DEFINE_int32(hls_media_sequence_number,
              "EXT-X-MEDIA-SEQUENCE value, which allows continuous media "
              "sequence across packager restarts. See #691 for more "
              "information about the reasoning of this and its use cases.");
+DEFINE_int32(hls_discontinuity_sequence_number,
+             0,
+             "Number. This HLS-only parameter defines the initial "
+             "EXT-X-DISCONTINUITY-SEQUENCE value.");
