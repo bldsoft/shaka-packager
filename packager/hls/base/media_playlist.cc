@@ -109,7 +109,7 @@ std::string CreatePlaylistHeader(
     HlsPlaylistType type,
     MediaPlaylist::MediaPlaylistStreamType stream_type,
     uint32_t media_sequence_number,
-    int discontinuity_sequence_number) {
+    uint32_t discontinuity_sequence_number) {
   const std::string version = GetPackagerVersion();
   std::string version_line;
   if (!version.empty()) {
@@ -369,13 +369,14 @@ MediaPlaylist::MediaPlaylist(const HlsParams& hls_params,
       file_name_(file_name),
       name_(name),
       group_id_(group_id),
-      media_sequence_number_(hls_params_.media_sequence_number) {
-  // When there's a forced media_sequence_number, start with discontinuity
-  if (media_sequence_number_ > 0)
-    entries_.emplace_back(new DiscontinuityEntry());
-
+      media_sequence_number_(hls_params_.media_sequence_number),
+      discontinuity_sequence_number_(
+          hls_params_.discontinuity_sequence_number) {
   start_timestamp_ = base::Time::Now().ToDoubleT();
-} 
+  // When there's a forced media_sequence_number, start with discontinuity
+  // if (media_sequence_number_ > 0)
+  // entries_.emplace_back(new DiscontinuityEntry());
+}
 
 MediaPlaylist::~MediaPlaylist() {}
 

@@ -15,5 +15,6 @@ DECLARE_string(hls_key_uri);
 DECLARE_string(hls_playlist_type);
 DECLARE_int32(hls_media_sequence_number);
 DECLARE_bool(hls_ext_x_program_date_time);
+DECLARE_int32(hls_discontinuity_sequence_number);
 
 #endif  // PACKAGER_APP_HLS_FLAGS_H_
