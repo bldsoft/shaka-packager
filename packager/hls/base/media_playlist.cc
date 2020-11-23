@@ -108,8 +108,8 @@ std::string CreatePlaylistHeader(
     uint32_t target_duration,
     HlsPlaylistType type,
     MediaPlaylist::MediaPlaylistStreamType stream_type,
-    int media_sequence_number,
-    int discontinuity_sequence_number) {
+    uint32_t media_sequence_number,
+    uint32_t discontinuity_sequence_number) {
   const std::string version = GetPackagerVersion();
   std::string version_line;
   if (!version.empty()) {
@@ -227,10 +227,10 @@ std::string SegmentInfoEntry::ToString() {
     base::Time::Exploded time;
     base::Time::FromDoubleT(program_date_time_).UTCExplode(&time);
 
-    std::string date_time = base::StringPrintf("%4d-%02d-%02dT%02d:%02d:%02d.%03dZ", time.year,
-                            time.month, time.day_of_month,
-                            time.hour, time.minute,
-                            time.second, time.millisecond);
+    std::string date_time =
+        base::StringPrintf("%4d-%02d-%02dT%02d:%02d:%02d.%03dZ", time.year,
+                           time.month, time.day_of_month, time.hour,
+                           time.minute, time.second, time.millisecond);
 
     base::StringAppendF(&result, "\n#EXT-X-PROGRAM-DATE-TIME:%s",
                         date_time.c_str());
@@ -368,8 +368,14 @@ MediaPlaylist::MediaPlaylist(const HlsParams& hls_params,
     : hls_params_(hls_params),
       file_name_(file_name),
       name_(name),
-      group_id_(group_id) {
+      group_id_(group_id),
+      media_sequence_number_(hls_params_.media_sequence_number),
+      discontinuity_sequence_number_(
+          hls_params_.discontinuity_sequence_number) {
   start_timestamp_ = base::Time::Now().ToDoubleT();
+  // When there's a forced media_sequence_number, start with discontinuity
+  // if (media_sequence_number_ > 0)
+  // entries_.emplace_back(new DiscontinuityEntry());
 }
 
 MediaPlaylist::~MediaPlaylist() {}
@@ -417,6 +423,7 @@ bool MediaPlaylist::SetMediaInfo(const MediaInfo& media_info) {
   characteristics_ =
       std::vector<std::string>(media_info_.hls_characteristics().begin(),
                                media_info_.hls_characteristics().end());
+
   return true;
 }
 
@@ -442,17 +449,16 @@ void MediaPlaylist::AddSegment(const std::string& file_name,
       const int64_t next_timestamp = std::next(iter) == key_frames_.end()
                                          ? (start_time + duration)
                                          : std::next(iter)->timestamp;
-      AddSegmentInfoEntry(file_name, iter->timestamp,
-                          next_timestamp - iter->timestamp,
-                          iter->start_byte_offset, iter->size,
-                          start_timestamp_);
-      start_timestamp_ += static_cast<double>(next_timestamp - iter->timestamp)
-                          / time_scale_;
+      AddSegmentInfoEntry(
+          file_name, iter->timestamp, next_timestamp - iter->timestamp,
+          iter->start_byte_offset, iter->size, start_timestamp_);
+      start_timestamp_ +=
+          static_cast<double>(next_timestamp - iter->timestamp) / time_scale_;
     }
     key_frames_.clear();
   } else {
-    AddSegmentInfoEntry(file_name, start_time, duration, start_byte_offset, size,
-                        start_timestamp_);
+    AddSegmentInfoEntry(file_name, start_time, duration, start_byte_offset,
+                        size, start_timestamp_);
     start_timestamp_ += static_cast<double>(duration) / time_scale_;
   }
 }
@@ -591,7 +597,7 @@ double MediaPlaylist::GetFrameRate() const {
 }
 
 double MediaPlaylist::GetStartTimeStamp() const {
-    return start_timestamp_;
+  return start_timestamp_;
 }
 
 void MediaPlaylist::AddSegmentInfoEntry(const std::string& segment_file_name,
