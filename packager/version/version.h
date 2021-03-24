@@ -23,7 +23,7 @@
  *
  * The micro version of shaka at compile time:
  */
-#define SHAKA_VERSION_MICRO (5)
+#define SHAKA_VERSION_MICRO (6)
 /**
  * SHAKA_VERSION_NANO:
  *
