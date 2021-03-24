@@ -16,11 +16,9 @@ namespace media {
 namespace mp2t {
 
 TsSectionPmt::TsSectionPmt(const RegisterPesCb& register_pes_cb)
-    : register_pes_cb_(register_pes_cb) {
-}
+    : register_pes_cb_(register_pes_cb) {}
 
-TsSectionPmt::~TsSectionPmt() {
-}
+TsSectionPmt::~TsSectionPmt() {}
 
 bool TsSectionPmt::ParsePsiSection(BitReader* bit_reader) {
   // Read up to |last_section_number|.
@@ -108,10 +106,17 @@ bool TsSectionPmt::ParsePsiSection(BitReader* bit_reader) {
       es_info_length--;
 
       // See ETSI EN 300 468 Section 6.1
-      if (stream_type == TsStreamType::kPesPrivateData &&
-          descriptor_tag == 0x59) {  // subtitling_descriptor
-        pid_info.back().stream_type = TsStreamType::kDvbSubtitles;
-      }
+      if (stream_type == TsStreamType::kPesPrivateData)
+        switch (descriptor_tag) {
+          case 0x56:  // teletext_descriptor
+            pid_info.back().stream_type = TsStreamType::kDvbTeletext;
+            break;
+          case 0x59:  // subtitling_descriptor
+            pid_info.back().stream_type = TsStreamType::kDvbSubtitles;
+            break;
+          default:
+            break;
+        }
     }
     RCHECK(bit_reader->SkipBits(8 * es_info_length));
   }
@@ -129,8 +134,7 @@ bool TsSectionPmt::ParsePsiSection(BitReader* bit_reader) {
   return true;
 }
 
-void TsSectionPmt::ResetPsiSection() {
-}
+void TsSectionPmt::ResetPsiSection() {}
 
 }  // namespace mp2t
 }  // namespace media
