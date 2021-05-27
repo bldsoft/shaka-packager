@@ -16,13 +16,14 @@ CallbackFile::CallbackFile(const char* file_name, const char* mode)
 CallbackFile::~CallbackFile() {}
 
 bool CallbackFile::Close() {
+  Flush();
   delete this;
   return true;
 }
 
 int64_t CallbackFile::Read(void* buffer, uint64_t length) {
   if (!callback_params_->read_func) {
-    LOG(ERROR) << "Read function not defined.";
+    LOG(ERROR) << "Read function is not defined.";
     return -1;
   }
   return callback_params_->read_func(name_, buffer, length);
@@ -39,16 +40,19 @@ int64_t CallbackFile::Write(const void* buffer, uint64_t length) {
 }
 
 int64_t CallbackFile::Size() {
-  if (!callback_params_->write_func) {
-    LOG(ERROR) << "Write function not defined.";
-    return 0;
+  if (!callback_params_->size_func) {
+    LOG(ERROR) << "Size function is not defined.";
+    return -1;
   }
-  return callback_params_->write_func(name_, nullptr, 1);
+  return callback_params_->size_func(name_);
 }
 
 bool CallbackFile::Flush() {
-  // Do nothing on Flush.
-  return true;
+  if (!callback_params_->flush_func) {
+    LOG(INFO) << "Flush function is not defined.";
+    return true;
+  }
+  return callback_params_->flush_func(name_);
 }
 
 bool CallbackFile::Seek(uint64_t position) {
@@ -73,11 +77,11 @@ bool CallbackFile::Open() {
 }
 
 bool CallbackFile::Delete() {
-  if (!callback_params_->write_func) {
-    LOG(ERROR) << "Write function not defined.";
+  if (!callback_params_->delete_func) {
+    LOG(ERROR) << "Delete function is not defined.";
     return false;
   }
-  return callback_params_->write_func(name_, nullptr, 0) != 0;
+  return callback_params_->delete_func(name_);
 }
 
 bool CallbackFile::Delete(const std::string& file_name) {
