@@ -163,4 +163,143 @@ TEST(CallbackFileTest, WriteFunctionNotDefined) {
   ASSERT_EQ(-1, writer->Write(kBuffer, kBufferSize));
 }
 
+TEST(CallbackFileTest, SizeSatisfied) {
+  MockFunction<int64_t(const std::string& name)>
+      mock_size_func;
+  BufferCallbackParams callback_params;
+  callback_params.size_func = mock_size_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_size_func,
+              Call(StrEq(kBufferLabel)))
+      .WillOnce(Return(static_cast<int64_t>(0)));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(static_cast<int64_t>(0), writer->Size());
+}
+
+TEST(CallbackFileTest, SizeFailed) {
+  MockFunction<int64_t(const std::string& name)>
+      mock_size_func;
+  BufferCallbackParams callback_params;
+  callback_params.size_func = mock_size_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_size_func,
+              Call(StrEq(kBufferLabel)))
+      .WillOnce(Return(static_cast<int64_t>(kFileError)));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(static_cast<int64_t>(kFileError), writer->Size());
+}
+
+TEST(CallbackFileTest, SizeFunctionNotDefined) {
+  BufferCallbackParams callback_params;
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(-1, writer->Size());
+}
+
+TEST(CallbackFileTest, DeleteSatisfied) {
+  MockFunction<bool(const std::string& name)>
+      mock_delete_func;
+  BufferCallbackParams callback_params;
+  callback_params.delete_func = mock_delete_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_delete_func,
+              Call(StrEq(kBufferLabel)))
+      .WillOnce(Return(true));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(true, writer->Delete(file_name.c_str()));
+}
+
+TEST(CallbackFileTest, DeleteFailed) {
+  MockFunction<bool(const std::string& name)>
+      mock_delete_func;
+  BufferCallbackParams callback_params;
+  callback_params.delete_func = mock_delete_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_delete_func,
+              Call(StrEq(kBufferLabel)))
+      .WillOnce(Return(false));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(false, writer->Delete(file_name.c_str()));
+}
+
+TEST(CallbackFileTest, DeleteFunctionNotDefined) {
+  BufferCallbackParams callback_params;
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(false, writer->Delete(file_name.c_str()));
+}
+
+TEST(CallbackFileTest, FlushSatisfied) {
+  MockFunction<bool(const std::string& name)>
+      mock_flush_func;
+  BufferCallbackParams callback_params;
+  callback_params.flush_func = mock_flush_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_flush_func,
+              Call(StrEq(kBufferLabel)))
+      .WillRepeatedly(Return(true));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(true, writer->Flush());
+}
+
+TEST(CallbackFileTest, FlushFailed) {
+  MockFunction<bool(const std::string& name)>
+      mock_flush_func;
+  BufferCallbackParams callback_params;
+  callback_params.flush_func = mock_flush_func.AsStdFunction();
+
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  EXPECT_CALL(mock_flush_func,
+              Call(StrEq(kBufferLabel)))
+      .WillOnce(Return(false))
+      .WillOnce(Return(true));
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(false, writer->Flush());
+}
+
+TEST(CallbackFileTest, FlushFunctionNotDefined) {
+  BufferCallbackParams callback_params;
+  std::string file_name =
+      File::MakeCallbackFileName(callback_params, kBufferLabel);
+
+  std::unique_ptr<File, FileCloser> writer(File::Open(file_name.c_str(), "w"));
+  ASSERT_TRUE(writer);
+  ASSERT_EQ(true, writer->Flush());
+}
+
 }  // namespace shaka
