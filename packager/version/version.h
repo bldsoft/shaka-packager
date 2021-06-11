@@ -17,20 +17,20 @@
  *
  * The minor version of shaka at compile time:
  */
-#define SHAKA_VERSION_MINOR (4)
+#define SHAKA_VERSION_MINOR (5)
 /**
  * SHAKA_VERSION_MICRO:
  *
  * The micro version of shaka at compile time:
  */
-#define SHAKA_VERSION_MICRO (6)
+#define SHAKA_VERSION_MICRO (0)
 /**
  * SHAKA_VERSION_NANO:
  *
  * The nano version of shaka at compile time:
  * Actual releases have 0, GIT versions have 1, prerelease versions have 2-...
  */
-#define SHAKA_VERSION_NANO (1)
+#define SHAKA_VERSION_NANO (0)
 
 /**
  * SHAKA_CHECK_VERSION:
