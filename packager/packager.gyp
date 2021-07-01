@@ -181,6 +181,21 @@
       ],
     },
     {
+      'target_name': 'export',
+      'type': '<(component)',
+      'sources': [
+        'export.h',
+      ],
+      'conditions': [
+        ['libpackager_type == "shared_library"', {
+          'defines': [
+            'SHARED_LIBRARY_BUILD',
+            'SHAKA_IMPLEMENTATION',
+          ],
+        }],
+      ],
+    },
+    {
       'target_name': 'status',
       'type': '<(component)',
       'sources': [
@@ -189,6 +204,7 @@
         'status_macros.h',
       ],
       'dependencies': [
+        'export',
         'base/base.gyp:base',
       ],
       'conditions': [
