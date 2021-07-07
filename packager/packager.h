@@ -18,6 +18,7 @@
 #include "packager/media/public/crypto_params.h"
 #include "packager/media/public/mp4_output_params.h"
 #include "packager/mpd/public/mpd_params.h"
+#include "packager/ocr/public/text_extractor_builder.h"
 #include "packager/status.h"
 
 namespace shaka {
@@ -70,6 +71,10 @@ struct PackagingParams {
 
   // Parameters for testing. Do not use in production.
   TestParams test_params;
+
+  // Text extractor builder for building objects which able to recognize text
+  // from images using ocr.
+  std::shared_ptr<const ocr::TextExtractorBuilder> text_extractor_builder;
 };
 
 /// Defines a single input/output stream.
@@ -140,6 +145,9 @@ struct StreamDescriptor {
   bool dash_only = false;
   /// Set to true to indicate that the stream is for hls only.
   bool hls_only = false;
+  /// Set to true to indicate that the stream is with ocr(only for 'text'
+  /// streams).
+  bool enable_ocr = false;
 };
 
 class SHAKA_EXPORT Packager {
@@ -151,9 +159,8 @@ class SHAKA_EXPORT Packager {
   /// @param packaging_params contains the packaging parameters.
   /// @param stream_descriptors a list of stream descriptors.
   /// @return OK on success, an appropriate error code on failure.
-  Status Initialize(
-      const PackagingParams& packaging_params,
-      const std::vector<StreamDescriptor>& stream_descriptors);
+  Status Initialize(const PackagingParams& packaging_params,
+                    const std::vector<StreamDescriptor>& stream_descriptors);
 
   /// Run the pipeline to completion (or failed / been cancelled). Note
   /// that it blocks until completion.

@@ -14,6 +14,7 @@
 #include "packager/media/base/text_sample.h"
 #include "packager/media/formats/dvb/dvb_image.h"
 #include "packager/media/formats/dvb/subtitle_composer.h"
+#include "packager/ocr/public/text_extractor.h"
 
 namespace shaka {
 namespace media {
@@ -33,6 +34,7 @@ enum class DvbSubSegmentType : uint16_t {
 class DvbSubParser {
  public:
   DvbSubParser();
+  DvbSubParser(std::unique_ptr<ocr::TextExtractor> text_extractor);
   ~DvbSubParser();
 
   DvbSubParser(const DvbSubParser&) = delete;

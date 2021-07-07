@@ -12,8 +12,8 @@
 #include "packager/media/base/text_sample.h"
 #include "packager/media/formats/mp2t/es_parser.h"
 #include "packager/media/formats/mp2t/es_parser_audio.h"
-#include "packager/media/formats/mp2t/es_parser_dvb_teletext.h"
 #include "packager/media/formats/mp2t/es_parser_dvb.h"
+#include "packager/media/formats/mp2t/es_parser_dvb_teletext.h"
 #include "packager/media/formats/mp2t/es_parser_h264.h"
 #include "packager/media/formats/mp2t/es_parser_h265.h"
 #include "packager/media/formats/mp2t/mp2t_common.h"
@@ -148,8 +148,11 @@ void PidState::ResetState() {
   continuity_counter_ = -1;
 }
 
-Mp2tMediaParser::Mp2tMediaParser()
-    : sbr_in_mimetype_(false), is_initialized_(false) {}
+Mp2tMediaParser::Mp2tMediaParser(
+    std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder)
+    : sbr_in_mimetype_(false),
+      is_initialized_(false),
+      text_extracor_builder_(std::move(text_extracor_builder)) {}
 
 Mp2tMediaParser::~Mp2tMediaParser() {}
 
@@ -306,7 +309,8 @@ void Mp2tMediaParser::RegisterPes(int pmt_pid,
       break;
     case TsStreamType::kDvbSubtitles:
       es_parser.reset(new EsParserDvb(pes_pid, on_new_stream, on_emit_text,
-                                      descriptor, descriptor_length));
+                                      descriptor, descriptor_length,
+                                      text_extracor_builder_));
       pid_type = PidState::kPidTextPes;
       break;
     case TsStreamType::kDvbTeletext:

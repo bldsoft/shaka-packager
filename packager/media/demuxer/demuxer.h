@@ -14,6 +14,7 @@
 #include "packager/base/compiler_specific.h"
 #include "packager/media/base/container_names.h"
 #include "packager/media/origin/origin_handler.h"
+#include "packager/ocr/public/text_extractor_builder.h"
 #include "packager/status.h"
 
 namespace shaka {
@@ -70,6 +71,13 @@ class Demuxer : public OriginHandler {
   /// @param language_override is the new language.
   void SetLanguageOverride(const std::string& stream_label,
                            const std::string& language_override);
+
+  /// Set the text extracor builder.
+  /// @param text_extracor_builder pointer to the text extracor builder.
+  void SetTextExtracorBuilder(
+      std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder) {
+    text_extracor_builder_ = std::move(text_extracor_builder);
+  }
 
   void set_dump_stream_info(bool dump_stream_info) {
     dump_stream_info_ = dump_stream_info;
@@ -144,6 +152,7 @@ class Demuxer : public OriginHandler {
   MediaContainerName container_name_ = CONTAINER_UNKNOWN;
   std::unique_ptr<uint8_t[]> buffer_;
   std::unique_ptr<KeySource> key_source_;
+  std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder_;
   bool cancelled_ = false;
   // Whether to dump stream info when it is received.
   bool dump_stream_info_ = false;

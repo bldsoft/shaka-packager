@@ -14,6 +14,7 @@
 #include "packager/media/base/media_parser.h"
 #include "packager/media/base/stream_info.h"
 #include "packager/media/formats/mp2t/ts_stream_type.h"
+#include "packager/ocr/public/text_extractor_builder.h"
 
 namespace shaka {
 namespace media {
@@ -28,7 +29,8 @@ class TsSection;
 
 class Mp2tMediaParser : public MediaParser {
  public:
-  Mp2tMediaParser();
+  Mp2tMediaParser(std::shared_ptr<const ocr::TextExtractorBuilder>
+                      text_extracor_builder = nullptr);
   ~Mp2tMediaParser() override;
 
   /// @name MediaParser implementation overrides.
@@ -99,6 +101,9 @@ class Mp2tMediaParser : public MediaParser {
   // A map used to track unsupported stream types and make sure the error is
   // only logged once.
   std::bitset<256> stream_type_logged_once_;
+
+  // Text extracor builder(ocr)
+  std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder_;
 
   DISALLOW_COPY_AND_ASSIGN(Mp2tMediaParser);
 };

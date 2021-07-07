@@ -42,6 +42,9 @@ RgbaColor ConvertYuv(uint8_t Y, uint8_t Cr, uint8_t Cb, uint8_t T) {
 
 DvbSubParser::DvbSubParser() : last_pts_(0), timeout_(0) {}
 
+DvbSubParser::DvbSubParser(std::unique_ptr<ocr::TextExtractor> text_extractor)
+    : composer_(std::move(text_extractor)), last_pts_(0), timeout_(0) {}
+
 DvbSubParser::~DvbSubParser() {}
 
 bool DvbSubParser::Parse(DvbSubSegmentType segment_type,
