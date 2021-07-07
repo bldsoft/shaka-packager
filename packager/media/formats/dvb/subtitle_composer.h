@@ -14,15 +14,26 @@
 #include "packager/base/macros.h"
 #include "packager/media/base/text_sample.h"
 #include "packager/media/formats/dvb/dvb_image.h"
+#include "packager/ocr/public/text_extractor.h"
 
 namespace shaka {
+namespace ocr {
+
+std::ostream& operator<<(std::ostream& os, const ocr::Status& x);
+}
 namespace media {
 
 /// Holds pixel/caption data for a single DVB-sub page.  This composes
 /// multiple objects and creates TextSample objects from it.
 class SubtitleComposer {
+ private:
+  SubtitleComposer(uint16_t display_width,
+                   uint16_t display_height,
+                   std::unique_ptr<ocr::TextExtractor> text_extracor);
+
  public:
   SubtitleComposer();
+  SubtitleComposer(std::unique_ptr<ocr::TextExtractor> text_extractor);
   ~SubtitleComposer();
 
   DISALLOW_COPY_AND_ASSIGN(SubtitleComposer);
@@ -71,6 +82,8 @@ class SubtitleComposer {
   std::unordered_map<uint16_t, DvbImageBuilder> images_;  // Uses object_id.
   uint16_t display_width_;
   uint16_t display_height_;
+
+  std::unique_ptr<ocr::TextExtractor> text_extracor_;
 };
 
 }  // namespace media

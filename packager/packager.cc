@@ -318,6 +318,12 @@ Status ValidateParams(const PackagingParams& packaging_params,
                     "stream descriptors.");
     }
 
+    if (descriptor.enable_ocr && !packaging_params.text_extractor_builder) {
+      return Status(error::INVALID_ARGUMENT,
+                    "Please specify PackagingParam 'text_extractor_builder'. "
+                    "It is required for streams with param 'enable_ocr'.");
+    }
+
     RETURN_IF_ERROR(ValidateStreamDescriptor(
         packaging_params.test_params.dump_stream_info, descriptor));
 
@@ -369,9 +375,10 @@ Status ValidateParams(const PackagingParams& packaging_params,
       !packaging_params.mpd_params.mpd_output.empty() &&
       !packaging_params.mp4_output_params.generate_sidx_in_media_segments &&
       !packaging_params.mpd_params.use_segment_list) {
-    return Status(error::UNIMPLEMENTED,
-                  "--generate_sidx_in_media_segments is required for DASH "
-                  "on-demand profile (not using segment_template or segment list).");
+    return Status(
+        error::UNIMPLEMENTED,
+        "--generate_sidx_in_media_segments is required for DASH "
+        "on-demand profile (not using segment_template or segment list).");
   }
 
   return Status::OK;
@@ -460,6 +467,16 @@ Status CreateDemuxer(const StreamDescriptor& stream,
           "Must define decryption key source when defining key provider");
     }
     demuxer->SetKeySource(std::move(decryption_key_source));
+  }
+
+  if (stream.enable_ocr) {
+    if (!packaging_params.text_extractor_builder) {
+      return Status(
+          error::INVALID_ARGUMENT,
+          "Please specify 'text_extracor_builder'. It is required for streams"
+          " with enabled ocr");
+    }
+    demuxer->SetTextExtracorBuilder(packaging_params.text_extractor_builder);
   }
 
   *new_demuxer = std::move(demuxer);

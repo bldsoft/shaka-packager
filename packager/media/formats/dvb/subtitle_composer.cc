@@ -12,6 +12,20 @@
 #include "packager/base/logging.h"
 
 namespace shaka {
+namespace ocr {
+std::ostream& operator<<(std::ostream& os, const ocr::Status& x) {
+  if (x.ok()) {
+    static const std::string ok_message = "OK";
+
+    const std::string& message = x.message().empty() ? ok_message : x.message();
+    os << message;
+  } else {
+    os << "code: " << x.code() << ", message: " << x.message();
+  }
+
+  return os;
+}
+}  // namespace ocr
 namespace media {
 
 namespace {
@@ -93,8 +107,22 @@ bool GetImageData(const DvbImageBuilder* image,
 
 }  // namespace
 
+SubtitleComposer::SubtitleComposer(
+    uint16_t display_width,
+    uint16_t display_height,
+    std::unique_ptr<ocr::TextExtractor> text_extracor)
+    : display_width_(kDefaultWidth),
+      display_height_(kDefaultHeight),
+      text_extracor_(std::move(text_extracor)) {}
+
 SubtitleComposer::SubtitleComposer()
-    : display_width_(kDefaultWidth), display_height_(kDefaultHeight) {}
+    : SubtitleComposer(kDefaultWidth, kDefaultHeight, nullptr) {}
+
+SubtitleComposer::SubtitleComposer(
+    std::unique_ptr<ocr::TextExtractor> text_extractor)
+    : SubtitleComposer(kDefaultWidth,
+                       kDefaultHeight,
+                       std::move(text_extractor)) {}
 
 SubtitleComposer::~SubtitleComposer() {}
 
@@ -221,21 +249,37 @@ bool SubtitleComposer::GetSamples(
       VLOG(1) << "Skipping transparent object";
       continue;
     }
-    TextFragment body({}, image_data);
-    DCHECK_LE(width, display_width_);
-    DCHECK_LE(height, display_height_);
 
+    TextFragment body;
     TextSettings settings;
-    settings.position.emplace(
-        (pair.second.x + pair.second.region->x) * 100.0f / display_width_,
-        TextUnitType::kPercent);
-    settings.line.emplace(
-        (pair.second.y + pair.second.region->y) * 100.0f / display_height_,
-        TextUnitType::kPercent);
-    settings.width.emplace(width * 100.0f / display_width_,
-                           TextUnitType::kPercent);
-    settings.height.emplace(height * 100.0f / display_height_,
-                            TextUnitType::kPercent);
+
+    if (text_extracor_) {
+      std::string text;
+
+      auto status = text_extracor_->RecognizeTextUtf8FromPng(image_data, text);
+      if (!status.ok()) {
+        LOG(WARNING) << "DVB-sub: failed to recognize text from image. "
+                     << status;
+      } else {
+        body = TextFragment({}, text);
+      }
+    } else {
+      body = TextFragment({}, image_data);
+
+      DCHECK_LE(width, display_width_);
+      DCHECK_LE(height, display_height_);
+
+      settings.position.emplace(
+          (pair.second.x + pair.second.region->x) * 100.0f / display_width_,
+          TextUnitType::kPercent);
+      settings.line.emplace(
+          (pair.second.y + pair.second.region->y) * 100.0f / display_height_,
+          TextUnitType::kPercent);
+      settings.width.emplace(width * 100.0f / display_width_,
+                             TextUnitType::kPercent);
+      settings.height.emplace(height * 100.0f / display_height_,
+                              TextUnitType::kPercent);
+    }
 
     samples->emplace_back(
         std::make_shared<TextSample>("", start, end, settings, body));
