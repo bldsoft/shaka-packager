@@ -28,6 +28,7 @@
       'dependencies': [
         '../../base/media_base.gyp:media_base',
         '../../../third_party/libpng/libpng.gyp:libpng',
+        '../../../ocr/ocr.gyp:ocr',
       ],
     },
     {

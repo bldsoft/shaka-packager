@@ -67,8 +67,7 @@ bool GetStreamIndex(const std::string& stream_label, size_t* stream_index) {
   }
   return true;
 }
-
-}
+}  // namespace
 
 namespace shaka {
 namespace media {
@@ -134,8 +133,7 @@ Status Demuxer::SetHandler(const std::string& stream_label,
                            std::shared_ptr<MediaHandler> handler) {
   size_t stream_index = kInvalidStreamIndex;
   if (!GetStreamIndex(stream_label, &stream_index)) {
-    return Status(error::INVALID_ARGUMENT,
-                  "Invalid stream: " + stream_label);
+    return Status(error::INVALID_ARGUMENT, "Invalid stream: " + stream_label);
   }
   return MediaHandler::SetHandler(stream_index, std::move(handler));
 }
@@ -179,13 +177,13 @@ Status Demuxer::InitializeParser() {
       parser_.reset(new mp4::MP4MediaParser());
       break;
     case CONTAINER_MPEG2TS:
-      parser_.reset(new mp2t::Mp2tMediaParser());
+      parser_.reset(new mp2t::Mp2tMediaParser(text_extracor_builder_));
       break;
-      // Widevine classic (WVM) is derived from MPEG2PS. We do not support
-      // non-WVM MPEG2PS file, thus we do not differentiate between the two.
-      // Every MPEG2PS file is assumed to be WVM file. If it turns out not the
-      // case, an error will be reported when trying to parse the file as WVM
-      // file.
+    // Widevine classic (WVM) is derived from MPEG2PS. We do not support
+    // non-WVM MPEG2PS file, thus we do not differentiate between the two.
+    // Every MPEG2PS file is assumed to be WVM file. If it turns out not the
+    // case, an error will be reported when trying to parse the file as WVM
+    // file.
     case CONTAINER_MPEG2PS:
       FALLTHROUGH_INTENDED;
     case CONTAINER_WVM:
@@ -247,9 +245,8 @@ void Demuxer::ParserInitEvent(
   bool audio_handler_set =
       output_handlers().find(kBaseAudioOutputStreamIndex) !=
       output_handlers().end();
-  bool text_handler_set =
-      output_handlers().find(kBaseTextOutputStreamIndex) !=
-      output_handlers().end();
+  bool text_handler_set = output_handlers().find(kBaseTextOutputStreamIndex) !=
+                          output_handlers().end();
   for (const std::shared_ptr<StreamInfo>& stream_info : stream_infos) {
     size_t stream_index = base_stream_index;
     if (video_handler_set && stream_info->stream_type() == kStreamVideo) {

@@ -17,10 +17,10 @@ namespace mp2t {
 
 namespace {
 
-bool ParseSubtitlingDescriptor(
-    const uint8_t* descriptor,
-    size_t size,
-    std::unordered_map<uint16_t, std::string>* langs) {
+bool ParseSubtitlingDescriptor(const uint8_t* descriptor,
+                               size_t size,
+                               std::unordered_map<uint16_t, std::string>* langs,
+                               std::vector<std::string>* all_languages) {
   // See ETSI EN 300 468 Section 6.2.41.
   BitReader reader(descriptor, size);
   size_t data_size;
@@ -40,22 +40,30 @@ bool ParseSubtitlingDescriptor(
     lang[0] = (lang_code >> 16) & 0xff;
     lang[1] = (lang_code >> 8) & 0xff;
     lang[2] = (lang_code >> 0) & 0xff;
+
+    all_languages->push_back(lang);
     langs->emplace(page, std::move(lang));
   }
   return true;
 }
 
+const std::string kEmptyLanguage = "";
+
 }  // namespace
 
-EsParserDvb::EsParserDvb(uint32_t pid,
-                         const NewStreamInfoCB& new_stream_info_cb,
-                         const EmitTextSampleCB& emit_sample_cb,
-                         const uint8_t* descriptor,
-                         size_t descriptor_length)
+EsParserDvb::EsParserDvb(
+    uint32_t pid,
+    const NewStreamInfoCB& new_stream_info_cb,
+    const EmitTextSampleCB& emit_sample_cb,
+    const uint8_t* descriptor,
+    size_t descriptor_length,
+    std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder)
     : EsParser(pid),
       new_stream_info_cb_(new_stream_info_cb),
-      emit_sample_cb_(emit_sample_cb) {
-  if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, &languages_)) {
+      emit_sample_cb_(emit_sample_cb),
+      text_extracor_builder_(std::move(text_extracor_builder)) {
+  if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, &languages_,
+                                 &all_languages_)) {
     LOG(WARNING) << "Error parsing subtitling descriptor";
   }
 }
@@ -123,8 +131,8 @@ bool EsParserDvb::ParseInternal(const uint8_t* data, size_t size, int64_t pts) {
 
     const uint8_t* payload = data + (size - reader.bits_available() / 8);
     std::vector<std::shared_ptr<TextSample>> samples;
-    RCHECK(parsers_[page_id].Parse(segment_type, pts, payload, segment_length,
-                                   &samples));
+    RCHECK(GetOrCreatePageSubParser(page_id).Parse(segment_type, pts, payload,
+                                                   segment_length, &samples));
     for (auto sample : samples) {
       sample->set_sub_stream_index(page_id);
       emit_sample_cb_.Run(sample);
@@ -133,6 +141,44 @@ bool EsParserDvb::ParseInternal(const uint8_t* data, size_t size, int64_t pts) {
     RCHECK(reader.SkipBytes(segment_length));
   }
   return temp == 0xff;
+}
+
+DvbSubParser& EsParserDvb::GetOrCreatePageSubParser(uint16_t page_id) {
+  auto it = parsers_.find(page_id);
+  if (it != std::end(parsers_)) {
+    return it->second;
+  }
+
+  if (text_extracor_builder_) {
+    const auto& language = GetPageLanguage(page_id);
+    const auto& languages =
+        language.empty() ? all_languages_ : std::vector<std::string>{language};
+
+    std::unique_ptr<ocr::TextExtractor> text_extractor;
+    auto status =
+        text_extracor_builder_->CreateTextExtractor(languages, &text_extractor);
+
+    if (!status.ok()) {
+      LOG(ERROR) << "Failed to create text extractor for DVB subtitles: "
+                 << status;
+    } else {
+      LOG(INFO) << "Text extractor for DVB subtitles has been created: "
+                << status.message();
+    }
+
+    auto result = parsers_.emplace(page_id, std::move(text_extractor));
+    return result.first->second;
+  }
+  return parsers_[page_id];
+}
+
+const std::string& EsParserDvb::GetPageLanguage(uint16_t page_id) const {
+  auto it = languages_.find(page_id);
+  if (it != std::end(languages_)) {
+    return it->second;
+  }
+
+  return kEmptyLanguage;
 }
 
 }  // namespace mp2t
