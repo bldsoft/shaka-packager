@@ -35,6 +35,7 @@ class EsParserDvb : public EsParser {
   bool Parse(const uint8_t* buf, int size, int64_t pts, int64_t dts) override;
   bool Flush() override;
   void Reset() override;
+  bool Init() override;
 
  private:
   EsParserDvb(const EsParserDvb&) = delete;
@@ -55,7 +56,6 @@ class EsParserDvb : public EsParser {
   std::unordered_map<uint16_t, DvbSubParser> parsers_;
   // A map of page_id to language.
   std::unordered_map<uint16_t, std::string> languages_;
-  bool sent_info_ = false;
   // A container with all languages
   std::vector<std::string> all_languages_;
   // A text extractor builder(ocr)

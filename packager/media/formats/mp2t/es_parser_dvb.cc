@@ -74,19 +74,6 @@ bool EsParserDvb::Parse(const uint8_t* buf,
                         int size,
                         int64_t pts,
                         int64_t dts) {
-  if (!sent_info_) {
-    sent_info_ = true;
-    std::shared_ptr<TextStreamInfo> info = std::make_shared<TextStreamInfo>(
-        pid(), kMpeg2Timescale, kInfiniteDuration, kCodecText,
-        /* codec_string= */ "", /* codec_config= */ "", /* width= */ 0,
-        /* height= */ 0, /* language= */ "");
-    for (const auto& pair : languages_) {
-      info->AddSubStream(pair.first, {pair.second});
-    }
-
-    new_stream_info_cb_.Run(info);
-  }
-
   // TODO: Handle buffering and multiple reads?  All content so far has been
   // a whole segment, so it may not be needed.
   return ParseInternal(buf, size, pts);
@@ -102,6 +89,20 @@ bool EsParserDvb::Flush() {
       emit_sample_cb_.Run(sample);
     }
   }
+  return true;
+}
+
+bool EsParserDvb::Init() {
+  std::shared_ptr<TextStreamInfo> info = std::make_shared<TextStreamInfo>(
+      pid(), kMpeg2Timescale, kInfiniteDuration, kCodecText,
+      /* codec_string= */ "", /* codec_config= */ "", /* width= */ 0,
+      /* height= */ 0, /* language= */ "");
+  for (const auto& pair : languages_) {
+    info->AddSubStream(pair.first, {pair.second});
+  }
+
+  new_stream_info_cb_.Run(info);
+
   return true;
 }
 
