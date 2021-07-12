@@ -12,6 +12,7 @@
 #include "packager/media/base/text_sample.h"
 #include "packager/media/formats/mp2t/es_parser.h"
 #include "packager/media/formats/mp2t/es_parser_audio.h"
+#include "packager/media/formats/mp2t/es_parser_dvb_teletext.h"
 #include "packager/media/formats/mp2t/es_parser_dvb.h"
 #include "packager/media/formats/mp2t/es_parser_h264.h"
 #include "packager/media/formats/mp2t/es_parser_h265.h"
@@ -106,10 +107,9 @@ bool PidState::PushTsPacket(const TsPacket& ts_packet) {
     return false;
   }
 
-  bool status = section_parser_->Parse(
-      ts_packet.payload_unit_start_indicator(),
-      ts_packet.payload(),
-      ts_packet.payload_size());
+  bool status =
+      section_parser_->Parse(ts_packet.payload_unit_start_indicator(),
+                             ts_packet.payload(), ts_packet.payload_size());
 
   // At the minimum, when parsing failed, auto reset the section parser.
   // Components that use the Mp2tMediaParser can take further action if needed.
@@ -149,9 +149,7 @@ void PidState::ResetState() {
 }
 
 Mp2tMediaParser::Mp2tMediaParser()
-    : sbr_in_mimetype_(false),
-      is_initialized_(false) {
-}
+    : sbr_in_mimetype_(false), is_initialized_(false) {}
 
 Mp2tMediaParser::~Mp2tMediaParser() {}
 
@@ -218,14 +216,13 @@ bool Mp2tMediaParser::Parse(const uint8_t* buf, int size) {
       ts_byte_queue_.Pop(1);
       continue;
     }
-    DVLOG(LOG_LEVEL_TS)
-        << "Processing PID=" << ts_packet->pid()
-        << " start_unit=" << ts_packet->payload_unit_start_indicator();
+    DVLOG(LOG_LEVEL_TS) << "Processing PID=" << ts_packet->pid()
+                        << " start_unit="
+                        << ts_packet->payload_unit_start_indicator();
 
     // Parse the section.
     auto it = pids_.find(ts_packet->pid());
-    if (it == pids_.end() &&
-        ts_packet->pid() == TsSection::kPidPat) {
+    if (it == pids_.end() && ts_packet->pid() == TsSection::kPidPat) {
       // Create the PAT state here if needed.
       std::unique_ptr<TsSection> pat_section_parser(new TsSectionPat(
           base::Bind(&Mp2tMediaParser::RegisterPmt, base::Unretained(this))));
@@ -251,8 +248,7 @@ bool Mp2tMediaParser::Parse(const uint8_t* buf, int size) {
 
 void Mp2tMediaParser::RegisterPmt(int program_number, int pmt_pid) {
   DVLOG(1) << "RegisterPmt:"
-           << " program_number=" << program_number
-           << " pmt_pid=" << pmt_pid;
+           << " program_number=" << program_number << " pmt_pid=" << pmt_pid;
 
   // Only one TS program is allowed. Ignore the incoming program map table,
   // if there is already one registered.
@@ -311,6 +307,11 @@ void Mp2tMediaParser::RegisterPes(int pmt_pid,
     case TsStreamType::kDvbSubtitles:
       es_parser.reset(new EsParserDvb(pes_pid, on_new_stream, on_emit_text,
                                       descriptor, descriptor_length));
+      pid_type = PidState::kPidTextPes;
+      break;
+    case TsStreamType::kDvbTeletext:
+      es_parser.reset(new EsParserDvbTeletext(
+          pes_pid, on_new_stream, on_emit_text, descriptor, descriptor_length));
       pid_type = PidState::kPidTextPes;
       break;
     default: {
@@ -421,8 +422,8 @@ void Mp2tMediaParser::OnEmitTextSample(uint32_t pes_pid,
   // Add the sample to the appropriate PID sample queue.
   auto pid_state = pids_.find(pes_pid);
   if (pid_state == pids_.end()) {
-    LOG(ERROR) << "PID State for new sample not found (pid = "
-               << pes_pid << ").";
+    LOG(ERROR) << "PID State for new sample not found (pid = " << pes_pid
+               << ").";
     return;
   }
   pid_state->second->text_sample_queue_.push_back(std::move(new_sample));
