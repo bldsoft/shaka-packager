@@ -92,8 +92,7 @@ TsSectionPes::TsSectionPes(std::unique_ptr<EsParser> es_parser)
   DCHECK(es_parser_);
 }
 
-TsSectionPes::~TsSectionPes() {
-}
+TsSectionPes::~TsSectionPes() {}
 
 bool TsSectionPes::Parse(bool payload_unit_start_indicator,
                          const uint8_t* buf,
@@ -148,6 +147,12 @@ void TsSectionPes::Reset() {
   es_parser_->Reset();
 }
 
+bool TsSectionPes::Init() {
+  RCHECK(es_parser_->Init());
+
+  return true;
+}
+
 bool TsSectionPes::Emit(bool emit_for_unknown_size) {
   int raw_pes_size;
   const uint8_t* raw_pes;
@@ -160,8 +165,7 @@ bool TsSectionPes::Emit(bool emit_for_unknown_size) {
 
   // Check whether we have enough data to start parsing.
   int pes_packet_length =
-      (static_cast<int>(raw_pes[4]) << 8) |
-      (static_cast<int>(raw_pes[5]));
+      (static_cast<int>(raw_pes[4]) << 8) | (static_cast<int>(raw_pes[5]));
   if ((pes_packet_length == 0 && !emit_for_unknown_size) ||
       (pes_packet_length != 0 && raw_pes_size < pes_packet_length + 6)) {
     // Wait for more data to come either because:
@@ -299,12 +303,10 @@ bool TsSectionPes::ParseInternal(const uint8_t* raw_pes, int raw_pes_size) {
   RCHECK(pes_header_remaining_size >= 0);
 
   // Read the PES packet.
-  DVLOG(LOG_LEVEL_PES)
-      << "Emit a reassembled PES:"
-      << " size=" << es_size
-      << " pts=" << media_pts
-      << " dts=" << media_dts
-      << " data_alignment_indicator=" << data_alignment_indicator;
+  DVLOG(LOG_LEVEL_PES) << "Emit a reassembled PES:"
+                       << " size=" << es_size << " pts=" << media_pts
+                       << " dts=" << media_dts << " data_alignment_indicator="
+                       << data_alignment_indicator;
   return es_parser_->Parse(&raw_pes[es_offset], es_size, media_pts, media_dts);
 }
 

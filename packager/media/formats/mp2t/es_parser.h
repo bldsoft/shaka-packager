@@ -40,6 +40,11 @@ class EsParser {
   // Reset the state of the ES parser.
   virtual void Reset() = 0;
 
+  // Init stream parser when possible. It can be useful for a live stream with
+  // several streams in one input when one of the streams could hang on the
+  // initialization step if stream data is absent(like DVB subtitles).
+  virtual bool Init() { return true; }
+
   uint32_t pid() { return pid_; }
 
  private:
