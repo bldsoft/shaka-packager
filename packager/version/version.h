@@ -30,7 +30,7 @@
  * The nano version of shaka at compile time:
  * Actual releases have 0, GIT versions have 1, prerelease versions have 2-...
  */
-#define SHAKA_VERSION_NANO (0)
+#define SHAKA_VERSION_NANO (1)
 
 /**
  * SHAKA_CHECK_VERSION:
