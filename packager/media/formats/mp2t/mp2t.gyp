@@ -22,6 +22,8 @@
         'continuity_counter.h',
         'es_parser_audio.cc',
         'es_parser_audio.h',
+        'es_parser_dvb_teletext.cc',
+        'es_parser_dvb_teletext.h',
         'es_parser_dvb.cc',
         'es_parser_dvb.h',
         'es_parser_h264.cc',
