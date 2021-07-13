@@ -145,19 +145,30 @@ TEST_F(MediaPlaylistMultiSegmentTest, AddSegment) {
 
 // Verify that it returns the display resolution.
 TEST_F(MediaPlaylistMultiSegmentTest, GetDisplayResolution) {
-  // A real case using sintel video.
   MediaInfo media_info;
   media_info.set_reference_time_scale(kTimeScale);
   MediaInfo::VideoInfo* video_info = media_info.mutable_video_info();
+
+  // A real case using sintel video.
   video_info->set_width(1920);
   video_info->set_height(818);
-  video_info->set_pixel_width(1636);
+  video_info->set_pixel_width(1638);
   video_info->set_pixel_height(1635);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   uint32_t width = 0;
   uint32_t height = 0;
   EXPECT_TRUE(media_playlist_->GetDisplayResolution(&width, &height));
-  EXPECT_EQ(1921u, width);
+  EXPECT_EQ(1924u, width);
+  EXPECT_EQ(818u, height);
+
+  // A real case with avoiding odd width(1921u changes to 1922u).
+  video_info->set_width(1920);
+  video_info->set_height(818);
+  video_info->set_pixel_width(1636);
+  video_info->set_pixel_height(1635);
+  ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
+  EXPECT_TRUE(media_playlist_->GetDisplayResolution(&width, &height));
+  EXPECT_EQ(1922u, width);
   EXPECT_EQ(818u, height);
 }
 
