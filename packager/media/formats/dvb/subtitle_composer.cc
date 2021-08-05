@@ -261,6 +261,10 @@ bool SubtitleComposer::GetSamples(
         LOG(WARNING) << "DVB-sub: failed to recognize text from image. "
                      << status;
       } else {
+        if (!status.message().empty()) {
+          LOG(INFO) << "DVB-sub: " << status;
+        }
+
         body = TextFragment({}, text);
       }
     } else {
