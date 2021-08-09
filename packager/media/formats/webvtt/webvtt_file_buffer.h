@@ -19,9 +19,14 @@ class TextSample;
 // A class to abstract writing a webvtt file to disk. This class will handle
 // all the formatting requirements for a webvtt file.
 class WebVttFileBuffer {
+  enum : int64_t {
+    kDefaultTimeScale = 1,
+  };
+
  public:
   WebVttFileBuffer(int32_t transport_stream_timestamp_offset_ms,
-                   const std::string& style_region_config);
+                   const std::string& style_region_config,
+                   int64_t time_scale);
   virtual ~WebVttFileBuffer() = default;
 
   void Reset();
@@ -40,6 +45,7 @@ class WebVttFileBuffer {
   const std::string style_region_config_;
   std::string buffer_;
   size_t sample_count_ = 0;
+  int64_t time_scale_ = kDefaultTimeScale;
 };
 
 }  // namespace media
