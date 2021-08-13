@@ -698,7 +698,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistMixedPlaylistsDifferentGroups) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -801,7 +801,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnly) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -853,7 +853,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyJOC) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -905,7 +905,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyAC4IMS) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -958,7 +958,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyAC4CBI) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }

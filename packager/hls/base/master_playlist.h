@@ -7,8 +7,8 @@
 #ifndef PACKAGER_HLS_BASE_MASTER_PLAYLIST_H_
 #define PACKAGER_HLS_BASE_MASTER_PLAYLIST_H_
 
-#include <list>
 #include <string>
+#include <vector>
 
 namespace shaka {
 namespace hls {
@@ -39,9 +39,10 @@ class MasterPlaylist {
   ///        interface can open.
   /// @return true if the playlist is updated successfully or there is no
   ///         difference since the last write, false otherwise.
-  virtual bool WriteMasterPlaylist(const std::string& base_url,
-                                   const std::string& output_dir,
-                                   const std::list<MediaPlaylist*>& playlists);
+  virtual bool WriteMasterPlaylist(
+      const std::string& base_url,
+      const std::string& output_dir,
+      const std::vector<MediaPlaylist*>& playlists);
 
  private:
   MasterPlaylist(const MasterPlaylist&) = delete;
