@@ -406,13 +406,13 @@ void BuildMediaTags(
 void AppendPlaylists(const std::string& default_audio_language,
                      const std::string& default_text_language,
                      const std::string& base_url,
-                     const std::list<MediaPlaylist*>& playlists,
+                     const std::vector<MediaPlaylist*>& playlists,
                      std::string* content) {
   std::map<std::string, std::list<const MediaPlaylist*>> audio_playlist_groups;
   std::map<std::string, std::list<const MediaPlaylist*>>
       subtitle_playlist_groups;
-  std::list<const MediaPlaylist*> video_playlists;
-  std::list<const MediaPlaylist*> iframe_playlists;
+  std::vector<const MediaPlaylist*> video_playlists;
+  std::vector<const MediaPlaylist*> iframe_playlists;
   for (const MediaPlaylist* playlist : playlists) {
     switch (playlist->stream_type()) {
       case MediaPlaylist::MediaPlaylistStreamType::kAudio:
@@ -498,7 +498,7 @@ MasterPlaylist::~MasterPlaylist() {}
 bool MasterPlaylist::WriteMasterPlaylist(
     const std::string& base_url,
     const std::string& output_dir,
-    const std::list<MediaPlaylist*>& playlists) {
+    const std::vector<MediaPlaylist*>& playlists) {
   std::string content = "#EXTM3U\n";
   AppendVersionString(&content);
 
