@@ -55,7 +55,7 @@ class MockMasterPlaylist : public MasterPlaylist {
   MOCK_METHOD3(WriteMasterPlaylist,
                bool(const std::string& prefix,
                     const std::string& output_dir,
-                    const std::list<MediaPlaylist*>& playlists));
+                    const std::vector<MediaPlaylist*>& playlists));
 };
 
 class MockMediaPlaylistFactory : public MediaPlaylistFactory {
