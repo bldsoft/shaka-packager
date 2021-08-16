@@ -37,7 +37,8 @@ class MediaPlaylistFactory {
 class SimpleHlsNotifier : public HlsNotifier {
  public:
   /// @param hls_params contains parameters for setting up the notifier.
-  explicit SimpleHlsNotifier(const HlsParams& hls_params);
+  explicit SimpleHlsNotifier(const HlsParams& hls_params,
+                             std::vector<std::string> hls_playlists_ordered);
   ~SimpleHlsNotifier() override;
 
   /// @name HlsNotifier implemetation overrides.

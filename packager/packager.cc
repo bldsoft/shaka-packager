@@ -197,6 +197,15 @@ bool IsTextStream(const StreamDescriptor& stream) {
   return output_format == CONTAINER_WEBVTT || output_format == CONTAINER_TTML;
 }
 
+bool IsVideoStream(const StreamDescriptor& stream) {
+  if (stream.stream_selector == "video")
+    return true;
+
+  // TODO: improve this function
+
+  return false;
+}
+
 Status ValidateStreamDescriptor(bool dump_stream_info,
                                 const StreamDescriptor& stream) {
   if (stream.input.empty()) {
@@ -810,6 +819,20 @@ Status CreateAllJobs(const std::vector<StreamDescriptor>& stream_descriptors,
   return job_manager->InitializeJobs();
 }
 
+std::vector<std::string> CreateOrderedHlsVideoPlaylists(
+    const std::vector<StreamDescriptor>& stream_descriptors) {
+  std::vector<std::string> playlists;
+
+  for (const auto& stream_descriptor : stream_descriptors) {
+    if (IsVideoStream(stream_descriptor) &&
+        !stream_descriptor.hls_playlist_name.empty()) {
+      playlists.push_back(stream_descriptor.hls_playlist_name);
+    }
+  }
+
+  return playlists;
+}
+
 }  // namespace
 }  // namespace media
 
@@ -903,7 +926,12 @@ Status Packager::Initialize(
   }
 
   if (!hls_params.master_playlist_output.empty()) {
-    internal->hls_notifier.reset(new hls::SimpleHlsNotifier(hls_params));
+    const auto& video_playlists_order =
+        hls_params.solidify_video_playlists_order_
+            ? media::CreateOrderedHlsVideoPlaylists(stream_descriptors)
+            : std::vector<std::string>{};
+    internal->hls_notifier.reset(
+        new hls::SimpleHlsNotifier(hls_params, video_playlists_order));
   }
 
   std::unique_ptr<SyncPointQueue> sync_points;

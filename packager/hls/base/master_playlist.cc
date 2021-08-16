@@ -26,12 +26,27 @@ const char* kDefaultAudioGroupId = "default-audio-group";
 const char* kDefaultSubtitleGroupId = "default-text-group";
 const char* kUnexpectedGroupId = "unexpected-group";
 
+enum : std::size_t {
+  kDefaultPlaylistIndex = std::numeric_limits<std::size_t>::max()
+};
+
 void AppendVersionString(std::string* content) {
   const std::string version = GetPackagerVersion();
   if (version.empty())
     return;
   base::StringAppendF(content, "## Generated with %s version %s\n",
                       GetPackagerProjectUrl().c_str(), version.c_str());
+}
+
+std::unordered_map<std::string, std::size_t> BuildPlaylistsOrderMap(
+    std::vector<std::string> playlists) {
+  std::unordered_map<std::string, std::size_t> order;
+
+  for (std::size_t i = 0; i < playlists.size(); ++i) {
+    order.emplace(std::move(playlists[i]), i);
+  }
+
+  return order;
 }
 
 // This structure roughly maps to the Variant stream in HLS specification.
@@ -403,11 +418,39 @@ void BuildMediaTags(
   }
 }
 
-void AppendPlaylists(const std::string& default_audio_language,
-                     const std::string& default_text_language,
-                     const std::string& base_url,
-                     const std::vector<MediaPlaylist*>& playlists,
-                     std::string* content) {
+std::size_t GetPlaylistOrder(
+    const std::string& playlist_file_name,
+    const std::unordered_map<std::string, std::size_t>& playlists_order) {
+  std::size_t order = kDefaultPlaylistIndex;
+
+  auto it = playlists_order.find(playlist_file_name);
+  if (it != std::end(playlists_order)) {
+    order = it->second;
+  }
+
+  return order;
+}
+
+std::vector<const MediaPlaylist*> SortPlaylists(
+    std::vector<const MediaPlaylist*> playlists,
+    const std::unordered_map<std::string, std::size_t>& playlists_order) {
+  std::sort(
+      std::begin(playlists), std::end(playlists),
+      [&playlists_order](const MediaPlaylist* lv, const MediaPlaylist* rv) {
+        return GetPlaylistOrder(lv->file_name(), playlists_order) <
+               GetPlaylistOrder(rv->file_name(), playlists_order);
+      });
+
+  return playlists;
+}
+
+void AppendPlaylists(
+    const std::string& default_audio_language,
+    const std::string& default_text_language,
+    const std::string& base_url,
+    const std::vector<MediaPlaylist*>& playlists,
+    const std::unordered_map<std::string, std::size_t>& video_playlists_order,
+    std::string* content) {
   std::map<std::string, std::list<const MediaPlaylist*>> audio_playlist_groups;
   std::map<std::string, std::list<const MediaPlaylist*>>
       subtitle_playlist_groups;
@@ -451,6 +494,12 @@ void AppendPlaylists(const std::string& default_audio_language,
     if (video_playlists.empty())
       break;
     content->append("\n");
+
+    if (!video_playlists_order.empty()) {
+      video_playlists =
+          SortPlaylists(std::move(video_playlists), video_playlists_order);
+    }
+
     for (const auto& playlist : video_playlists) {
       BuildStreamInfTag(*playlist, variant, base_url, content);
     }
@@ -487,11 +536,14 @@ void AppendPlaylists(const std::string& default_audio_language,
 MasterPlaylist::MasterPlaylist(const std::string& file_name,
                                const std::string& default_audio_language,
                                const std::string& default_text_language,
-                               bool is_independent_segments)
+                               bool is_independent_segments,
+                               std::vector<std::string> video_playlists_ordered)
     : file_name_(file_name),
       default_audio_language_(default_audio_language),
       default_text_language_(default_text_language),
-      is_independent_segments_(is_independent_segments) {}
+      is_independent_segments_(is_independent_segments),
+      video_playlists_order_{
+          BuildPlaylistsOrderMap(std::move(video_playlists_ordered))} {}
 
 MasterPlaylist::~MasterPlaylist() {}
 
@@ -506,7 +558,7 @@ bool MasterPlaylist::WriteMasterPlaylist(
     content.append("\n#EXT-X-INDEPENDENT-SEGMENTS\n");
   }
   AppendPlaylists(default_audio_language_, default_text_language_, base_url,
-                  playlists, &content);
+                  playlists, video_playlists_order_, &content);
 
   // Skip if the playlist is already written.
   if (content == written_playlist_)
