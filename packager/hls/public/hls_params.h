@@ -62,6 +62,9 @@ struct HlsParams {
   /// Custom EXT-X-MEDIA-SEQUENCE value to allow continuous media playback
   /// across packager restarts. See #691 for details.
   uint32_t media_sequence_number = 0;
+  /// Indicates that the order of video playlists in a master playlist should
+  /// correspond to the order of video streams passed to the packager.
+  bool solidify_video_playlists_order_ = false;
   /// Enable generation of EXT-X-PROGRAM-DATE-TIME tag.
   bool ext_x_program_date_time = false;
   uint32_t discontinuity_sequence_number = 0;
