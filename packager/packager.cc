@@ -464,7 +464,8 @@ bool StreamInfoToTextMediaInfo(const StreamDescriptor& stream_descriptor,
 Status CreateDemuxer(const StreamDescriptor& stream,
                      const PackagingParams& packaging_params,
                      std::shared_ptr<Demuxer>* new_demuxer) {
-  std::shared_ptr<Demuxer> demuxer = std::make_shared<Demuxer>(stream.input);
+  std::shared_ptr<Demuxer> demuxer =
+      std::make_shared<Demuxer>(stream.input, stream.init_buffer_size);
   demuxer->set_dump_stream_info(packaging_params.test_params.dump_stream_info);
 
   if (packaging_params.decryption_params.key_provider != KeyProvider::kNone) {

@@ -24,8 +24,6 @@
 #include "packager/media/formats/wvm/wvm_media_parser.h"
 
 namespace {
-// 65KB, sufficient to determine the container and likely all init data.
-const size_t kInitBufSize = 0x10000;
 const size_t kBufSize = 0x200000;  // 2MB
 // Maximum number of allowed queued samples. If we are receiving a lot of
 // samples before seeing init_event, something is not right. The number
@@ -72,8 +70,11 @@ bool GetStreamIndex(const std::string& stream_label, size_t* stream_index) {
 namespace shaka {
 namespace media {
 
-Demuxer::Demuxer(const std::string& file_name)
-    : file_name_(file_name), buffer_(new uint8_t[kBufSize]) {}
+Demuxer::Demuxer(const std::string& file_name, std::size_t init_buffer_size)
+    : file_name_(file_name),
+      buffer_(new uint8_t[kBufSize]),
+      init_buffer_size_{init_buffer_size == 0 ? kDefaultInitBufSize
+                                              : init_buffer_size} {}
 
 Demuxer::~Demuxer() {
   if (media_file_)
@@ -160,9 +161,9 @@ Status Demuxer::InitializeParser() {
 
   // Read enough bytes before detecting the container.
   int64_t bytes_read = 0;
-  while (static_cast<size_t>(bytes_read) < kInitBufSize) {
+  while (static_cast<size_t>(bytes_read) < init_buffer_size_) {
     int64_t read_result =
-        media_file_->Read(buffer_.get() + bytes_read, kInitBufSize);
+        media_file_->Read(buffer_.get() + bytes_read, init_buffer_size_);
     if (read_result < 0)
       return Status(error::FILE_FAILURE, "Cannot read file " + file_name_);
     if (read_result == 0)
