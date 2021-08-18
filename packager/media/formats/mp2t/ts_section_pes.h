@@ -28,7 +28,6 @@ class TsSectionPes : public TsSection {
              int size) override;
   bool Flush() override;
   void Reset() override;
-  bool Init() override;
 
  private:
   // Emit a reassembled PES packet.
@@ -65,3 +64,4 @@ class TsSectionPes : public TsSection {
 }  // namespace shaka
 
 #endif
+

@@ -34,9 +34,6 @@ class TsSection {
 
   // Reset the state of the parser to its initial state.
   virtual void Reset() = 0;
-
-  // Init the state of the parser if necessary.
-  virtual bool Init() = 0;
 };
 
 }  // namespace mp2t
