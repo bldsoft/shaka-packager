@@ -50,12 +50,6 @@ class PidState {
   // and reset its state.
   bool Flush();
 
-  // Init the PID state.
-  // It is necessary for initialization live stream with nonpersistent data
-  // flow(like subtitles).
-  // Return true if successful.
-  bool Init();
-
   // Enable/disable the PID.
   // Disabling a PID will reset its state and ignore any further incoming TS
   // packets.
@@ -131,10 +125,6 @@ bool PidState::Flush() {
   RCHECK(section_parser_->Flush());
   ResetState();
   return true;
-}
-
-bool PidState::Init() {
-  return section_parser_->Init();
 }
 
 void PidState::Enable() {
@@ -346,13 +336,7 @@ void Mp2tMediaParser::RegisterPes(int pmt_pid,
   std::unique_ptr<PidState> pes_pid_state(
       new PidState(pes_pid, pid_type, std::move(pes_section_parser)));
   pes_pid_state->Enable();
-
-  auto result = pids_.emplace(pes_pid, std::move(pes_pid_state));
-  if (result.second) {
-    if (!result.first->second->Init()) {
-      LOG(WARNING) << "Failed stream intialization with pid=" << pes_pid;
-    }
-  }
+  pids_.emplace(pes_pid, std::move(pes_pid_state));
 }
 
 void Mp2tMediaParser::OnNewStreamInfo(
