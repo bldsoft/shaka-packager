@@ -392,25 +392,17 @@ bool Mp2tMediaParser::FinishInitializationIfNeeded() {
 
   std::vector<std::shared_ptr<StreamInfo>> all_stream_info;
   uint32_t num_es(0);
-
-  // Workaround for fixing cases when only DVB(subtitles/teletext) streams are
-  // present.
-  // TODO: try to pre-initialize the DVB(subtitles/teletext) streams correctly.
-  uint32_t num_text_es(0);
-
   for (const auto& pair : pids_) {
     if ((pair.second->pid_type() == PidState::kPidAudioPes ||
          pair.second->pid_type() == PidState::kPidVideoPes ||
          pair.second->pid_type() == PidState::kPidTextPes) &&
         pair.second->IsEnabled()) {
       ++num_es;
-      if (pair.second->pid_type() == PidState::kPidTextPes)
-        ++num_text_es;
       if (pair.second->config())
         all_stream_info.push_back(pair.second->config());
     }
   }
-  if (num_es && (all_stream_info.size() == num_es) && (num_es != num_text_es)) {
+  if (num_es && (all_stream_info.size() == num_es)) {
     // All stream configurations have been received. Initialization can
     // be completed.
     init_cb_.Run(all_stream_info);
