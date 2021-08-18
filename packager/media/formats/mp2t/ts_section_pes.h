@@ -64,4 +64,3 @@ class TsSectionPes : public TsSection {
 }  // namespace shaka
 
 #endif
-
