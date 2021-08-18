@@ -22,6 +22,8 @@ using ::testing::_;
 using ::testing::Return;
 using ::testing::SetArgPointee;
 
+const std::size_t kDefaultInitBufferSize = 0;
+
 class MockKeySource : public RawKeySource {
  public:
   MOCK_METHOD2(GetKey,
@@ -48,13 +50,14 @@ class DemuxerTest : public MediaHandlerGraphTestBase {
 };
 
 TEST_F(DemuxerTest, FileNotFound) {
-  Demuxer demuxer("file_not_exist.mp4");
+  Demuxer demuxer("file_not_exist.mp4", kDefaultInitBufferSize);
   EXPECT_EQ(error::FILE_FAILURE, demuxer.Run().error_code());
 }
 
 TEST_F(DemuxerTest, EncryptedContentWithoutKeySource) {
   Demuxer demuxer(GetAppTestDataFilePath("encryption/bear-640x360-video.mp4")
-                      .AsUTF8Unsafe());
+                      .AsUTF8Unsafe(),
+                  kDefaultInitBufferSize);
   ASSERT_OK(demuxer.SetHandler("video", some_handler()));
   EXPECT_EQ(error::INVALID_ARGUMENT, demuxer.Run().error_code());
 }
@@ -66,7 +69,8 @@ TEST_F(DemuxerTest, EncryptedContentWithKeySource) {
           DoAll(SetArgPointee<1>(GetMockEncryptionKey()), Return(Status::OK)));
 
   Demuxer demuxer(GetAppTestDataFilePath("encryption/bear-640x360-video.mp4")
-                      .AsUTF8Unsafe());
+                      .AsUTF8Unsafe(),
+                  kDefaultInitBufferSize);
   demuxer.SetKeySource(std::move(mock_key_source));
   ASSERT_OK(demuxer.SetHandler("video", some_handler()));
   EXPECT_OK(demuxer.Run());

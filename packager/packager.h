@@ -148,6 +148,9 @@ struct StreamDescriptor {
   /// Set to true to indicate that the stream is with ocr(only for 'text'
   /// streams).
   bool enable_ocr = false;
+  /// Allow specifying init buffer size. The default value is 0(use default init
+  /// buffer size 64k). Could be useful for text streams.
+  uint32_t init_buffer_size = 0;
 };
 
 class SHAKA_EXPORT Packager {
