@@ -949,7 +949,7 @@ Status Packager::Initialize(
 
   if (!hls_params.master_playlist_output.empty()) {
     const auto& video_playlists_order =
-        hls_params.solidify_video_playlists_order_
+        hls_params.solidify_video_playlists_order
             ? media::CreateOrderedHlsVideoPlaylists(stream_descriptors)
             : std::vector<std::string>{};
     internal->hls_notifier.reset(
