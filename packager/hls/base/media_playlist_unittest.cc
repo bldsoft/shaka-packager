@@ -7,8 +7,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
- #include "packager/base/time/time.h"
 #include "packager/base/strings/stringprintf.h"
+#include "packager/base/time/time.h"
 #include "packager/file/file.h"
 #include "packager/file/file_closer.h"
 #include "packager/file/file_test_util.h"
@@ -38,10 +38,9 @@ std::string timestampToString(double ts) {
   const char date_time_tmpl[] = "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ";
   base::Time::Exploded time;
   base::Time::FromDoubleT(ts).UTCExplode(&time);
-  return base::StringPrintf(
-      date_time_tmpl,
-      time.year, time.month, time.day_of_month,
-      time.hour, time.minute, time.second, time.millisecond);
+  return base::StringPrintf(date_time_tmpl, time.year, time.month,
+                            time.day_of_month, time.hour, time.minute,
+                            time.second, time.millisecond);
 }
 
 MATCHER_P(MatchesString, expected_string, "") {
@@ -236,7 +235,8 @@ TEST_F(MediaPlaylistSingleSegmentTest, AddSegmentByteRange) {
   ASSERT_FILE_STREQ(kMemoryFilePath, kExpectedOutput);
 }
 
-TEST_F(MediaPlaylistSingleSegmentTest, AddSegmentByteRangeWithExtXProgramDateTime) {
+TEST_F(MediaPlaylistSingleSegmentTest,
+       AddSegmentByteRangeWithExtXProgramDateTime) {
   hls_params_.ext_x_program_date_time = true;
   media_playlist_.reset(new MediaPlaylist(hls_params_, default_file_name_,
                                           default_name_, default_group_id_));
@@ -247,10 +247,12 @@ TEST_F(MediaPlaylistSingleSegmentTest, AddSegmentByteRangeWithExtXProgramDateTim
 
   ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
 
-  const std::string date_time1 = timestampToString(media_playlist_->GetStartTimeStamp());
+  const std::string date_time1 =
+      timestampToString(media_playlist_->GetStartTimeStamp());
   media_playlist_->AddSegment("file.mp4", 0, 10 * kTimeScale, 1000,
                               1 * kMBytes);
-  const std::string date_time2 = timestampToString(media_playlist_->GetStartTimeStamp());
+  const std::string date_time2 =
+      timestampToString(media_playlist_->GetStartTimeStamp());
   media_playlist_->AddSegment("file.mp4", 10 * kTimeScale, 10 * kTimeScale,
                               1001000, 2 * kMBytes);
   std::string kExpectedOutput = base::StringPrintf(
@@ -270,7 +272,7 @@ TEST_F(MediaPlaylistSingleSegmentTest, AddSegmentByteRangeWithExtXProgramDateTim
       "#EXT-X-BYTERANGE:2000000\n"
       "file.mp4\n"
       "#EXT-X-ENDLIST\n",
-          date_time1.c_str(), date_time2.c_str());
+      date_time1.c_str(), date_time2.c_str());
 
   const char kMemoryFilePath[] = "memory://media.m3u8";
   EXPECT_TRUE(media_playlist_->WriteToFile(kMemoryFilePath));
@@ -547,13 +549,15 @@ TEST_F(MediaPlaylistMultiSegmentTest, GetEC3JocComplexity) {
   // Returns 0 by default if not audio.
   EXPECT_EQ(0, media_playlist_->GetEC3JocComplexity());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ec3_joc_complexity(16);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ec3_joc_complexity(16);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(16, media_playlist_->GetEC3JocComplexity());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ec3_joc_complexity(6);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ec3_joc_complexity(6);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(6, media_playlist_->GetEC3JocComplexity());
 }
@@ -565,13 +569,15 @@ TEST_F(MediaPlaylistMultiSegmentTest, GetAC4ImsFlag) {
   // Returns false by default if not audio.
   EXPECT_EQ(false, media_playlist_->GetAC4ImsFlag());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ac4_ims_flag(false);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ac4_ims_flag(false);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(false, media_playlist_->GetAC4ImsFlag());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ac4_ims_flag(true);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ac4_ims_flag(true);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(true, media_playlist_->GetAC4ImsFlag());
 }
@@ -583,13 +589,15 @@ TEST_F(MediaPlaylistMultiSegmentTest, GetAC4CbiFlag) {
   // Returns false by default if not audio.
   EXPECT_EQ(false, media_playlist_->GetAC4CbiFlag());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ac4_cbi_flag(false);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ac4_cbi_flag(false);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(false, media_playlist_->GetAC4CbiFlag());
 
-  media_info.mutable_audio_info()->mutable_codec_specific_data()->
-    set_ac4_cbi_flag(true);
+  media_info.mutable_audio_info()
+      ->mutable_codec_specific_data()
+      ->set_ac4_cbi_flag(true);
   ASSERT_TRUE(media_playlist_->SetMediaInfo(media_info));
   EXPECT_EQ(true, media_playlist_->GetAC4CbiFlag());
 }
@@ -970,16 +978,18 @@ TEST_F(IFrameMediaPlaylistTest, SingleSegmentWithExtXProgramDateTime) {
 
   ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
   media_playlist_->AddKeyFrame(0, 1000, 2345);
-  const std::string date_time1 = timestampToString(media_playlist_->GetStartTimeStamp());
-  const std::string date_time2 = timestampToString(media_playlist_->GetStartTimeStamp()
-                                 + 2.0);
+  const std::string date_time1 =
+      timestampToString(media_playlist_->GetStartTimeStamp());
+  const std::string date_time2 =
+      timestampToString(media_playlist_->GetStartTimeStamp() + 2.0);
   media_playlist_->AddKeyFrame(2 * kTimeScale, 5000, 6345);
   media_playlist_->AddSegment("file.mp4", 0, 10 * kTimeScale, kZeroByteOffset,
                               kMBytes);
   media_playlist_->AddKeyFrame(11 * kTimeScale, kMBytes + 1000, 2345);
-  const std::string date_time3 = timestampToString(media_playlist_->GetStartTimeStamp());
-  const std::string date_time4 = timestampToString(media_playlist_->GetStartTimeStamp()
-                                 + 4.0);
+  const std::string date_time3 =
+      timestampToString(media_playlist_->GetStartTimeStamp());
+  const std::string date_time4 =
+      timestampToString(media_playlist_->GetStartTimeStamp() + 4.0);
   media_playlist_->AddKeyFrame(15 * kTimeScale, kMBytes + 3345, 12345);
   media_playlist_->AddSegment("file.mp4", 10 * kTimeScale, 10 * kTimeScale,
                               1001000, 2 * kMBytes);
@@ -1010,7 +1020,8 @@ TEST_F(IFrameMediaPlaylistTest, SingleSegmentWithExtXProgramDateTime) {
       "#EXT-X-BYTERANGE:12345\n"
       "file.mp4\n"
       "#EXT-X-ENDLIST\n",
-          date_time1.c_str(), date_time2.c_str(), date_time3.c_str(), date_time4.c_str());
+      date_time1.c_str(), date_time2.c_str(), date_time3.c_str(),
+      date_time4.c_str());
 
   const char kMemoryFilePath[] = "memory://media.m3u8";
   EXPECT_TRUE(media_playlist_->WriteToFile(kMemoryFilePath));

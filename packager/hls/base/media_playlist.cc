@@ -227,10 +227,10 @@ std::string SegmentInfoEntry::ToString() {
     base::Time::Exploded time;
     base::Time::FromDoubleT(program_date_time_).UTCExplode(&time);
 
-    std::string date_time = base::StringPrintf("%4d-%02d-%02dT%02d:%02d:%02d.%03dZ", time.year,
-                            time.month, time.day_of_month,
-                            time.hour, time.minute,
-                            time.second, time.millisecond);
+    std::string date_time =
+        base::StringPrintf("%4d-%02d-%02dT%02d:%02d:%02d.%03dZ", time.year,
+                           time.month, time.day_of_month, time.hour,
+                           time.minute, time.second, time.millisecond);
 
     base::StringAppendF(&result, "\n#EXT-X-PROGRAM-DATE-TIME:%s",
                         date_time.c_str());
@@ -450,17 +450,16 @@ void MediaPlaylist::AddSegment(const std::string& file_name,
       const int64_t next_timestamp = std::next(iter) == key_frames_.end()
                                          ? (start_time + duration)
                                          : std::next(iter)->timestamp;
-      AddSegmentInfoEntry(file_name, iter->timestamp,
-                          next_timestamp - iter->timestamp,
-                          iter->start_byte_offset, iter->size,
-                          start_timestamp_);
-      start_timestamp_ += static_cast<double>(next_timestamp - iter->timestamp)
-                          / time_scale_;
+      AddSegmentInfoEntry(
+          file_name, iter->timestamp, next_timestamp - iter->timestamp,
+          iter->start_byte_offset, iter->size, start_timestamp_);
+      start_timestamp_ +=
+          static_cast<double>(next_timestamp - iter->timestamp) / time_scale_;
     }
     key_frames_.clear();
   } else {
-    AddSegmentInfoEntry(file_name, start_time, duration, start_byte_offset, size,
-                        start_timestamp_);
+    AddSegmentInfoEntry(file_name, start_time, duration, start_byte_offset,
+                        size, start_timestamp_);
     start_timestamp_ += static_cast<double>(duration) / time_scale_;
   }
 }
@@ -611,7 +610,7 @@ double MediaPlaylist::GetFrameRate() const {
 }
 
 double MediaPlaylist::GetStartTimeStamp() const {
-    return start_timestamp_;
+  return start_timestamp_;
 }
 
 void MediaPlaylist::AddSegmentInfoEntry(const std::string& segment_file_name,
