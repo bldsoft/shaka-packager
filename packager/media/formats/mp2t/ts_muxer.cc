@@ -12,6 +12,9 @@ namespace mp2t {
 
 namespace {
 const uint32_t kTsTimescale = 90000;
+
+// es_parser_h26x.cc, method EsParserH26x::EmitFrame()
+const uint64_t kArbitrarySmallDurationFactor = 0.001;
 }  // namespace
 
 TsMuxer::TsMuxer(const MuxerOptions& muxer_options) : Muxer(muxer_options) {}
@@ -35,11 +38,18 @@ Status TsMuxer::Finalize() {
 Status TsMuxer::AddMediaSample(size_t stream_id, const MediaSample& sample) {
   DCHECK_EQ(stream_id, 0u);
   if (num_samples_ < 2) {
-    sample_durations_[num_samples_] =
+    const int64_t sample_duration =
         sample.duration() * kTsTimescale / streams().front()->time_scale();
-    if (num_samples_ == 1 && muxer_listener())
-      muxer_listener()->OnSampleDurationReady(sample_durations_[num_samples_]);
-    num_samples_++;
+
+    // The condition was added for skipping samples with arbitrary small
+    // duration.
+    if (sample_duration <= kTsTimescale * kArbitrarySmallDurationFactor) {
+      sample_durations_[num_samples_] = sample_duration;
+      if (num_samples_ == 1 && muxer_listener())
+        muxer_listener()->OnSampleDurationReady(
+            sample_durations_[num_samples_]);
+      num_samples_++;
+    }
   }
   return segmenter_->AddSample(sample);
 }
