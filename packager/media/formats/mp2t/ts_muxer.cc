@@ -43,7 +43,7 @@ Status TsMuxer::AddMediaSample(size_t stream_id, const MediaSample& sample) {
 
     // The condition was added for skipping samples with arbitrary small
     // duration.
-    if (sample_duration <= kTsTimescale * kArbitrarySmallDurationFactor) {
+    if (sample_duration >= kTsTimescale * kArbitrarySmallDurationFactor) {
       sample_durations_[num_samples_] = sample_duration;
       if (num_samples_ == 1 && muxer_listener())
         muxer_listener()->OnSampleDurationReady(
