@@ -34,6 +34,11 @@ uint64_t Rescale(uint64_t time_in_old_scale,
   return static_cast<double>(time_in_old_scale) / old_scale * new_scale;
 }
 
+const uint32_t kTsTimescale = 90000;
+
+// es_parser_h26x.cc, method EsParserH26x::EmitFrame()
+const double kArbitrarySmallDurationFactor = 0.001;
+
 }  // namespace
 
 Segmenter::Segmenter(const MuxerOptions& options,
@@ -138,8 +143,18 @@ Status Segmenter::AddSample(size_t stream_id, const MediaSample& sample) {
   if (!status.ok())
     return status;
 
-  if (sample_duration_ == 0)
-    sample_duration_ = sample.duration();
+  if (num_samples_ < 2) {
+    const uint32_t sample_duration =
+        sample.duration() * kTsTimescale / moov_->header.timescale;
+
+    // The condition was added for skipping samples with arbitrary small
+    // duration.
+    if (sample_duration > kTsTimescale * kArbitrarySmallDurationFactor) {
+      sample_durations_[num_samples_] = sample_duration;
+      num_samples_++;
+    }
+  }
+
   stream_durations_[stream_id] += sample.duration();
   return Status::OK;
 }
