@@ -26,6 +26,10 @@ bool IsNewSegmentIndex(int64_t new_index, int64_t current_index) {
          new_index != current_index - 1;
 }
 
+bool IsVideoCodec(Codec codec) {
+  return codec >= kCodecVideo && codec < kCodecVideoMaxPlusOne;
+}
+
 }  // namespace
 
 ChunkingHandler::ChunkingHandler(const ChunkingParams& chunking_params)
@@ -68,6 +72,9 @@ Status ChunkingHandler::OnStreamInfo(std::shared_ptr<const StreamInfo> info) {
   time_scale_ = info->time_scale();
   segment_duration_ =
       chunking_params_.segment_duration_in_seconds * time_scale_;
+  if (IsVideoCodec(info->codec()) && chunking_params_.video_segment_round > 10) {
+    segment_duration_eps_ = segment_duration_ / chunking_params_.video_segment_round;
+  }
   subsegment_duration_ =
       chunking_params_.subsegment_duration_in_seconds * time_scale_;
   return DispatchStreamInfo(kStreamIndex, std::move(info));
@@ -98,7 +105,7 @@ Status ChunkingHandler::OnMediaSample(
   if (can_start_new_segment) {
     const int64_t segment_index =
         timestamp < cue_offset_ ? 0
-                                : (timestamp - cue_offset_) / segment_duration_;
+                                : ((timestamp - cue_offset_) + segment_duration_eps_) / segment_duration_;
     if (!segment_start_time_ ||
         IsNewSegmentIndex(segment_index, current_segment_index_)) {
       current_segment_index_ = segment_index;

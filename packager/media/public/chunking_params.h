@@ -13,6 +13,8 @@ namespace shaka {
 struct ChunkingParams {
   /// Segment duration in seconds.
   double segment_duration_in_seconds = 0;
+
+  double video_segment_round = 0;
   /// Subsegment duration in seconds. Should not be larger than the segment
   /// duration.
   double subsegment_duration_in_seconds = 0;
