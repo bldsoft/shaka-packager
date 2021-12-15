@@ -51,7 +51,8 @@ bool SimpleMpdNotifier::NotifyNewContainer(const MediaInfo& media_info,
   AdaptationSet* adaptation_set = period->GetOrCreateAdaptationSet(
       media_info, content_protection_in_adaptation_set_);
   DCHECK(adaptation_set);
-  if (!adaptation_set->has_id())
+  // We skip trickmode (has_playback_rate) so that it is at the end of the playlist
+  if (!adaptation_set->has_id() && !media_info.video_info().has_playback_rate())
     adaptation_set->set_id(next_adaptation_set_id_++);
   Representation* representation =
       adaptation_set->AddRepresentation(adjusted_media_info);
