@@ -28,6 +28,27 @@ struct BufferCallbackParams {
   std::function<
       int64_t(const std::string& name, const void* buffer, uint64_t size)>
       write_func;
+  /// If this function is specified, packager calls this function
+  /// with @a name set. This applies to @a
+  /// PackagingParams.MpdParams.mpd_output,
+  /// @a PackagingParams.HlsParams.master_playlist_output, @a
+  /// StreamDescriptor.output, @a StreamDescriptor.segment_template, @a
+  /// StreamDescriptor.hls_playlist_name.
+  std::function<int64_t(const std::string& name)> size_func;
+  /// If this function is specified, packager calls this function
+  /// with @a name set. This applies to @a
+  /// PackagingParams.MpdParams.mpd_output,
+  /// @a PackagingParams.HlsParams.master_playlist_output, @a
+  /// StreamDescriptor.output, @a StreamDescriptor.segment_template, @a
+  /// StreamDescriptor.hls_playlist_name.
+  std::function<bool(const std::string& name)> delete_func;
+  /// If this function is specified, packager calls this function
+  /// with @a name set. This applies to @a
+  /// PackagingParams.MpdParams.mpd_output,
+  /// @a PackagingParams.HlsParams.master_playlist_output, @a
+  /// StreamDescriptor.output, @a StreamDescriptor.segment_template, @a
+  /// StreamDescriptor.hls_playlist_name.
+  std::function<bool(const std::string& name)> flush_func;
 };
 
 }  // namespace shaka

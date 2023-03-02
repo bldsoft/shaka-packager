@@ -15,13 +15,21 @@ namespace media {
 namespace {
 const char* kHeader = "WEBVTT\n";
 const int kTsTimescale = 90000;
+
+int64_t PtsTimeToMs(int64_t pts, int64_t time_scale) {
+  return (static_cast<double>(pts) / time_scale) * 1000;
+}
 }  // namespace
 
-WebVttFileBuffer::WebVttFileBuffer(int32_t transport_stream_timestamp_offset_ms,
-                                   const std::string& style_region_config)
+WebVttFileBuffer::WebVttFileBuffer(
+    int32_t transport_stream_timestamp_offset_ms,
+    const std::string& style_region_config,
+    int64_t time_scale)
     : transport_stream_timestamp_offset_(transport_stream_timestamp_offset_ms *
                                          kTsTimescale / 1000),
-      style_region_config_(style_region_config) {
+      style_region_config_(style_region_config),
+      time_scale_(time_scale ? time_scale : kDefaultTimeScale) {
+  DCHECK(time_scale);
   // Make sure we start with the same state that we would end up with if
   // the caller reset our state.
   Reset();
@@ -57,9 +65,11 @@ void WebVttFileBuffer::Append(const TextSample& sample) {
   }
 
   // Write the times that the sample elapses.
-  buffer_.append(MsToWebVttTimestamp(sample.start_time()));
+  buffer_.append(
+      MsToWebVttTimestamp(PtsTimeToMs(sample.start_time(), time_scale_)));
   buffer_.append(" --> ");
-  buffer_.append(MsToWebVttTimestamp(sample.EndTime()));
+  buffer_.append(
+      MsToWebVttTimestamp(PtsTimeToMs(sample.EndTime(), time_scale_)));
   const std::string settings = WebVttSettingsToString(sample.settings());
   if (!settings.empty()) {
     buffer_.append(" ");

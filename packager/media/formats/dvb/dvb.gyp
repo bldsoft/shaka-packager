@@ -17,12 +17,18 @@
         'dvb_image.h',
         'dvb_sub_parser.cc',
         'dvb_sub_parser.h',
+        'dvb_teletext_charset.cc',
+        'dvb_teletext_charset.h',
+        'dvb_teletext_parser.cc',
+        'dvb_teletext_parser.h',
+        'dvb_teletext.h',
         'subtitle_composer.cc',
         'subtitle_composer.h',
       ],
       'dependencies': [
         '../../base/media_base.gyp:media_base',
         '../../../third_party/libpng/libpng.gyp:libpng',
+        '../../../ocr/ocr.gyp:ocr',
       ],
     },
     {

@@ -131,6 +131,15 @@ base::Optional<xml::XmlNode> Period::GetXml(bool output_period_duration) {
         return adaptation_set_a->id() < adaptation_set_b->id();
       });
 
+  uint32_t max_id = 0;
+  for (auto& adaptation_set : adaptation_sets_) {
+    if (adaptation_set->has_id()) {
+      max_id = adaptation_set->id();
+    } else {
+      adaptation_set->set_id(++max_id);
+    }
+  }
+
   xml::XmlNode period("Period");
 
   // Required for 'dynamic' MPDs.

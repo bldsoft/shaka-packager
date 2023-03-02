@@ -24,8 +24,6 @@
 #include "packager/media/formats/wvm/wvm_media_parser.h"
 
 namespace {
-// 65KB, sufficient to determine the container and likely all init data.
-const size_t kInitBufSize = 0x10000;
 const size_t kBufSize = 0x200000;  // 2MB
 // Maximum number of allowed queued samples. If we are receiving a lot of
 // samples before seeing init_event, something is not right. The number
@@ -67,14 +65,16 @@ bool GetStreamIndex(const std::string& stream_label, size_t* stream_index) {
   }
   return true;
 }
-
-}
+}  // namespace
 
 namespace shaka {
 namespace media {
 
-Demuxer::Demuxer(const std::string& file_name)
-    : file_name_(file_name), buffer_(new uint8_t[kBufSize]) {}
+Demuxer::Demuxer(const std::string& file_name, std::size_t init_buffer_size)
+    : file_name_(file_name),
+      buffer_(new uint8_t[kBufSize]),
+      init_buffer_size_{init_buffer_size == 0 ? kDefaultInitBufSize
+                                              : init_buffer_size} {}
 
 Demuxer::~Demuxer() {
   if (media_file_)
@@ -134,8 +134,7 @@ Status Demuxer::SetHandler(const std::string& stream_label,
                            std::shared_ptr<MediaHandler> handler) {
   size_t stream_index = kInvalidStreamIndex;
   if (!GetStreamIndex(stream_label, &stream_index)) {
-    return Status(error::INVALID_ARGUMENT,
-                  "Invalid stream: " + stream_label);
+    return Status(error::INVALID_ARGUMENT, "Invalid stream: " + stream_label);
   }
   return MediaHandler::SetHandler(stream_index, std::move(handler));
 }
@@ -162,9 +161,9 @@ Status Demuxer::InitializeParser() {
 
   // Read enough bytes before detecting the container.
   int64_t bytes_read = 0;
-  while (static_cast<size_t>(bytes_read) < kInitBufSize) {
+  while (static_cast<size_t>(bytes_read) < init_buffer_size_) {
     int64_t read_result =
-        media_file_->Read(buffer_.get() + bytes_read, kInitBufSize);
+        media_file_->Read(buffer_.get() + bytes_read, init_buffer_size_);
     if (read_result < 0)
       return Status(error::FILE_FAILURE, "Cannot read file " + file_name_);
     if (read_result == 0)
@@ -179,13 +178,13 @@ Status Demuxer::InitializeParser() {
       parser_.reset(new mp4::MP4MediaParser());
       break;
     case CONTAINER_MPEG2TS:
-      parser_.reset(new mp2t::Mp2tMediaParser());
+      parser_.reset(new mp2t::Mp2tMediaParser(text_extracor_builder_));
       break;
-      // Widevine classic (WVM) is derived from MPEG2PS. We do not support
-      // non-WVM MPEG2PS file, thus we do not differentiate between the two.
-      // Every MPEG2PS file is assumed to be WVM file. If it turns out not the
-      // case, an error will be reported when trying to parse the file as WVM
-      // file.
+    // Widevine classic (WVM) is derived from MPEG2PS. We do not support
+    // non-WVM MPEG2PS file, thus we do not differentiate between the two.
+    // Every MPEG2PS file is assumed to be WVM file. If it turns out not the
+    // case, an error will be reported when trying to parse the file as WVM
+    // file.
     case CONTAINER_MPEG2PS:
       FALLTHROUGH_INTENDED;
     case CONTAINER_WVM:
@@ -247,9 +246,8 @@ void Demuxer::ParserInitEvent(
   bool audio_handler_set =
       output_handlers().find(kBaseAudioOutputStreamIndex) !=
       output_handlers().end();
-  bool text_handler_set =
-      output_handlers().find(kBaseTextOutputStreamIndex) !=
-      output_handlers().end();
+  bool text_handler_set = output_handlers().find(kBaseTextOutputStreamIndex) !=
+                          output_handlers().end();
   for (const std::shared_ptr<StreamInfo>& stream_info : stream_infos) {
     size_t stream_index = base_stream_index;
     if (video_handler_set && stream_info->stream_type() == kStreamVideo) {

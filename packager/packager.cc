@@ -197,6 +197,15 @@ bool IsTextStream(const StreamDescriptor& stream) {
   return output_format == CONTAINER_WEBVTT || output_format == CONTAINER_TTML;
 }
 
+bool IsVideoStream(const StreamDescriptor& stream) {
+  if (stream.stream_selector == "video")
+    return true;
+
+  // TODO: improve this function
+
+  return false;
+}
+
 Status ValidateStreamDescriptor(bool dump_stream_info,
                                 const StreamDescriptor& stream) {
   if (stream.input.empty()) {
@@ -318,6 +327,12 @@ Status ValidateParams(const PackagingParams& packaging_params,
                     "stream descriptors.");
     }
 
+    if (descriptor.enable_ocr && !packaging_params.text_extractor_builder) {
+      return Status(error::INVALID_ARGUMENT,
+                    "Please specify PackagingParam 'text_extractor_builder'. "
+                    "It is required for streams with param 'enable_ocr'.");
+    }
+
     RETURN_IF_ERROR(ValidateStreamDescriptor(
         packaging_params.test_params.dump_stream_info, descriptor));
 
@@ -369,9 +384,10 @@ Status ValidateParams(const PackagingParams& packaging_params,
       !packaging_params.mpd_params.mpd_output.empty() &&
       !packaging_params.mp4_output_params.generate_sidx_in_media_segments &&
       !packaging_params.mpd_params.use_segment_list) {
-    return Status(error::UNIMPLEMENTED,
-                  "--generate_sidx_in_media_segments is required for DASH "
-                  "on-demand profile (not using segment_template or segment list).");
+    return Status(
+        error::UNIMPLEMENTED,
+        "--generate_sidx_in_media_segments is required for DASH "
+        "on-demand profile (not using segment_template or segment list).");
   }
 
   if (packaging_params.chunking_params.low_latency_dash_mode &&
@@ -469,7 +485,8 @@ bool StreamInfoToTextMediaInfo(const StreamDescriptor& stream_descriptor,
 Status CreateDemuxer(const StreamDescriptor& stream,
                      const PackagingParams& packaging_params,
                      std::shared_ptr<Demuxer>* new_demuxer) {
-  std::shared_ptr<Demuxer> demuxer = std::make_shared<Demuxer>(stream.input);
+  std::shared_ptr<Demuxer> demuxer =
+      std::make_shared<Demuxer>(stream.input, stream.init_buffer_size);
   demuxer->set_dump_stream_info(packaging_params.test_params.dump_stream_info);
 
   if (packaging_params.decryption_params.key_provider != KeyProvider::kNone) {
@@ -481,6 +498,16 @@ Status CreateDemuxer(const StreamDescriptor& stream,
           "Must define decryption key source when defining key provider");
     }
     demuxer->SetKeySource(std::move(decryption_key_source));
+  }
+
+  if (stream.enable_ocr) {
+    if (!packaging_params.text_extractor_builder) {
+      return Status(
+          error::INVALID_ARGUMENT,
+          "Please specify 'text_extracor_builder'. It is required for streams"
+          " with enabled ocr");
+    }
+    demuxer->SetTextExtracorBuilder(packaging_params.text_extractor_builder);
   }
 
   *new_demuxer = std::move(demuxer);
@@ -814,6 +841,20 @@ Status CreateAllJobs(const std::vector<StreamDescriptor>& stream_descriptors,
   return job_manager->InitializeJobs();
 }
 
+std::vector<std::string> CreateOrderedHlsVideoPlaylists(
+    const std::vector<StreamDescriptor>& stream_descriptors) {
+  std::vector<std::string> playlists;
+
+  for (const auto& stream_descriptor : stream_descriptors) {
+    if (IsVideoStream(stream_descriptor) &&
+        !stream_descriptor.hls_playlist_name.empty()) {
+      playlists.push_back(stream_descriptor.hls_playlist_name);
+    }
+  }
+
+  return playlists;
+}
+
 }  // namespace
 }  // namespace media
 
@@ -907,7 +948,12 @@ Status Packager::Initialize(
   }
 
   if (!hls_params.master_playlist_output.empty()) {
-    internal->hls_notifier.reset(new hls::SimpleHlsNotifier(hls_params));
+    const auto& video_playlists_order =
+        hls_params.solidify_video_playlists_order
+            ? media::CreateOrderedHlsVideoPlaylists(stream_descriptors)
+            : std::vector<std::string>{};
+    internal->hls_notifier.reset(
+        new hls::SimpleHlsNotifier(hls_params, video_playlists_order));
   }
 
   std::unique_ptr<SyncPointQueue> sync_points;

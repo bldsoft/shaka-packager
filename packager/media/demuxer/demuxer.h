@@ -14,6 +14,7 @@
 #include "packager/base/compiler_specific.h"
 #include "packager/media/base/container_names.h"
 #include "packager/media/origin/origin_handler.h"
+#include "packager/ocr/public/text_extractor_builder.h"
 #include "packager/status.h"
 
 namespace shaka {
@@ -35,7 +36,10 @@ class Demuxer : public OriginHandler {
   /// @param file_name specifies the input source. It uses prefix matching to
   ///        create a proper File object. The user can extend File to support
   ///        a custom File object with its own prefix.
-  explicit Demuxer(const std::string& file_name);
+  /// @param init_buffer_size specifies the size of the init buffer. If value
+  /// equals to 0 then uses kDefaultInitBufSize. Could be useful for text
+  /// streams.
+  explicit Demuxer(const std::string& file_name, std::size_t init_buffer_size);
   ~Demuxer();
 
   /// Set the KeySource for media decryption.
@@ -71,6 +75,13 @@ class Demuxer : public OriginHandler {
   void SetLanguageOverride(const std::string& stream_label,
                            const std::string& language_override);
 
+  /// Set the text extracor builder.
+  /// @param text_extracor_builder pointer to the text extracor builder.
+  void SetTextExtracorBuilder(
+      std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder) {
+    text_extracor_builder_ = std::move(text_extracor_builder);
+  }
+
   void set_dump_stream_info(bool dump_stream_info) {
     dump_stream_info_ = dump_stream_info;
   }
@@ -93,6 +104,11 @@ class Demuxer : public OriginHandler {
  private:
   Demuxer(const Demuxer&) = delete;
   Demuxer& operator=(const Demuxer&) = delete;
+
+  enum : std::size_t {
+    // 65KB, sufficient to determine the container and likely all init data.
+    kDefaultInitBufSize = 0x10000,
+  };
 
   template <typename T>
   struct QueuedSample {
@@ -143,7 +159,9 @@ class Demuxer : public OriginHandler {
   std::map<size_t, std::string> language_overrides_;
   MediaContainerName container_name_ = CONTAINER_UNKNOWN;
   std::unique_ptr<uint8_t[]> buffer_;
+  const std::size_t init_buffer_size_ = kDefaultInitBufSize;
   std::unique_ptr<KeySource> key_source_;
+  std::shared_ptr<const ocr::TextExtractorBuilder> text_extracor_builder_;
   bool cancelled_ = false;
   // Whether to dump stream info when it is received.
   bool dump_stream_info_ = false;

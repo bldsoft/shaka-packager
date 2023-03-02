@@ -7,8 +7,9 @@
 #ifndef PACKAGER_HLS_BASE_MASTER_PLAYLIST_H_
 #define PACKAGER_HLS_BASE_MASTER_PLAYLIST_H_
 
-#include <list>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace shaka {
 namespace hls {
@@ -26,8 +27,9 @@ class MasterPlaylist {
   ///        tagged with 'DEFAULT'.
   MasterPlaylist(const std::string& file_name,
                  const std::string& default_audio_language,
-                 const std::string& default_text_language, 
-                 const bool is_independent_segments);
+                 const std::string& default_text_language,
+                 const bool is_independent_segments,
+                 std::vector<std::string> video_playlists_ordered);
   virtual ~MasterPlaylist();
 
   /// Writes Master Playlist to output_dir + <name of playlist>.
@@ -39,9 +41,10 @@ class MasterPlaylist {
   ///        interface can open.
   /// @return true if the playlist is updated successfully or there is no
   ///         difference since the last write, false otherwise.
-  virtual bool WriteMasterPlaylist(const std::string& base_url,
-                                   const std::string& output_dir,
-                                   const std::list<MediaPlaylist*>& playlists);
+  virtual bool WriteMasterPlaylist(
+      const std::string& base_url,
+      const std::string& output_dir,
+      const std::vector<MediaPlaylist*>& playlists);
 
  private:
   MasterPlaylist(const MasterPlaylist&) = delete;
@@ -52,6 +55,7 @@ class MasterPlaylist {
   const std::string default_audio_language_;
   const std::string default_text_language_;
   bool is_independent_segments_;
+  const std::unordered_map<std::string, std::size_t> video_playlists_order_;
 };
 
 }  // namespace hls

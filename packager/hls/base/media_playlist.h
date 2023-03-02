@@ -213,6 +213,10 @@ class MediaPlaylist {
   /// @return the frame rate.
   virtual double GetFrameRate() const;
 
+  /// @return time stamp
+  /// For testing only.
+  virtual double GetStartTimeStamp() const;
+
   /// @return the language of the media, as an ISO language tag in its shortest
   ///         form.  May be an empty string for video.
   const std::string& language() const { return language_; }
@@ -236,7 +240,8 @@ class MediaPlaylist {
                            int64_t start_time,
                            int64_t duration,
                            uint64_t start_byte_offset,
-                           uint64_t size);
+                           uint64_t size,
+                           double start_timestamp);
   // Adjust the duration of the last SegmentInfoEntry to end on
   // |next_timestamp|.
   void AdjustLastSegmentInfoEntryDuration(int64_t next_timestamp);
@@ -262,7 +267,7 @@ class MediaPlaylist {
   std::vector<std::string> characteristics_;
   uint32_t media_sequence_number_ = 0;
   bool inserted_discontinuity_tag_ = false;
-  int discontinuity_sequence_number_ = 0;
+  uint32_t discontinuity_sequence_number_ = 0;
 
   double longest_segment_duration_seconds_ = 0.0;
   int32_t time_scale_ = 0;
@@ -276,6 +281,10 @@ class MediaPlaylist {
   // See SetTargetDuration() comments.
   bool target_duration_set_ = false;
   int32_t target_duration_ = 0;
+
+  // Time stamp for SegmentInfoEntry in the "entries_" list.
+  // This is used for tag EXT-X-PROGRAM-DATE-TIME generation.
+  double start_timestamp_ = 0;
 
   // TODO(kqyang): This could be managed better by a separate class, than having
   // all them managed in MediaPlaylist.

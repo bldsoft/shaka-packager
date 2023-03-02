@@ -277,7 +277,9 @@ std::unique_ptr<MediaPlaylist> MediaPlaylistFactory::Create(
       new MediaPlaylist(hls_params, file_name, name, group_id));
 }
 
-SimpleHlsNotifier::SimpleHlsNotifier(const HlsParams& hls_params)
+SimpleHlsNotifier::SimpleHlsNotifier(
+    const HlsParams& hls_params,
+    std::vector<std::string> hls_playlists_ordered)
     : HlsNotifier(hls_params),
       media_playlist_factory_(new MediaPlaylistFactory()) {
   const base::FilePath master_playlist_path(
@@ -288,10 +290,10 @@ SimpleHlsNotifier::SimpleHlsNotifier(const HlsParams& hls_params)
       hls_params.default_text_language.empty()
           ? hls_params.default_language
           : hls_params.default_text_language;
-  master_playlist_.reset(
-      new MasterPlaylist(master_playlist_path.BaseName().AsUTF8Unsafe(),
-                         default_audio_langauge, default_text_language, 
-                         hls_params.is_independent_segments));
+  master_playlist_.reset(new MasterPlaylist(
+      master_playlist_path.BaseName().AsUTF8Unsafe(), default_audio_langauge,
+      default_text_language, hls_params.is_independent_segments,
+      std::move(hls_playlists_ordered)));
 }
 
 SimpleHlsNotifier::~SimpleHlsNotifier() {}

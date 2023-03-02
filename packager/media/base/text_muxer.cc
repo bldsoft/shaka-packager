@@ -11,6 +11,11 @@
 
 namespace shaka {
 namespace media {
+namespace {
+int64_t PtsTimeToMs(int64_t pts, int64_t time_scale) {
+  return (static_cast<double>(pts) / time_scale) * 1000;
+}
+}  // namespace
 
 TextMuxer::TextMuxer(const MuxerOptions& options) : Muxer(options) {}
 TextMuxer::~TextMuxer() {}
@@ -65,13 +70,15 @@ Status TextMuxer::AddTextSample(size_t stream_id, const TextSample& sample) {
 
   RETURN_IF_ERROR(AddTextSampleInternal(sample));
 
-  last_cue_ms_ = sample.EndTime();
+  const int64_t time_scale = streams()[stream_id]->time_scale();
+  last_cue_ms_ = PtsTimeToMs(sample.EndTime(), time_scale);
   return Status::OK;
 }
 
 Status TextMuxer::FinalizeSegment(size_t stream_id,
                                   const SegmentInfo& segment_info) {
-  total_duration_ms_ += segment_info.duration;
+  const int64_t time_scale = streams()[stream_id]->time_scale();
+  total_duration_ms_ += PtsTimeToMs(segment_info.duration, time_scale);
 
   const std::string& segment_template = options().segment_template;
   DCHECK(!segment_template.empty());

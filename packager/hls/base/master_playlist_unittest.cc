@@ -31,6 +31,7 @@ const char kDefaultMasterPlaylistName[] = "playlist.m3u8";
 const char kDefaultAudioLanguage[] = "en";
 const char kDefaultTextLanguage[] = "fr";
 const bool kIsIndependentSegments = true;
+const std::vector<std::string> kVideoPlaylistsOrder = {};
 const uint32_t kWidth = 800;
 const uint32_t kHeight = 600;
 const uint32_t kEC3JocComplexityZero = 0;
@@ -138,9 +139,10 @@ class MasterPlaylistTest : public ::testing::Test {
  protected:
   MasterPlaylistTest()
       : master_playlist_(new MasterPlaylist(kDefaultMasterPlaylistName,
-                         kDefaultAudioLanguage,
-                         kDefaultTextLanguage,
-                         !kIsIndependentSegments)),
+                                            kDefaultAudioLanguage,
+                                            kDefaultTextLanguage,
+                                            !kIsIndependentSegments,
+                                            kVideoPlaylistsOrder)),
         test_output_dir_("memory://test_dir"),
         master_playlist_path_(
             FilePath::FromUTF8Unsafe(test_output_dir_)
@@ -186,10 +188,8 @@ TEST_F(MasterPlaylistTest,
   const uint64_t kAvgBitrate = 235889;
 
   master_playlist_.reset(new MasterPlaylist(
-                             kDefaultMasterPlaylistName,
-                             kDefaultAudioLanguage,
-                             kDefaultTextLanguage,
-                             kIsIndependentSegments));
+      kDefaultMasterPlaylistName, kDefaultAudioLanguage, kDefaultTextLanguage,
+      kIsIndependentSegments, kVideoPlaylistsOrder));
 
   std::unique_ptr<MockMediaPlaylist> mock_playlist =
       CreateVideoPlaylist("media1.m3u8", "avc1", kMaxBitrate, kAvgBitrate);
@@ -698,7 +698,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistMixedPlaylistsDifferentGroups) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -783,6 +783,102 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistMixedPlaylistsDifferentGroups) {
   ASSERT_EQ(expected, actual);
 }
 
+TEST_F(MasterPlaylistTest,
+       WriteMasterPlaylistSeveralVideosWithPredefinedOrder) {
+  const uint64_t kAudioChannels = 2;
+  const uint64_t kAudioMaxBitrate = 50000;
+  const uint64_t kAudioAvgBitrate = 30000;
+  const uint64_t kVideoMaxBitrate = 300000;
+  const uint64_t kVideoAvgBitrate = 100000;
+  const uint64_t kIframeMaxBitrate = 100000;
+  const uint64_t kIframeAvgBitrate = 80000;
+  const std::vector<std::string> kVideoPlaylistsOrder = {
+      "video-1.m3u8", "video-2.m3u8", "video-3.m3u8"};
+
+  master_playlist_.reset(new MasterPlaylist(
+      kDefaultMasterPlaylistName, kDefaultAudioLanguage, kDefaultTextLanguage,
+      !kIsIndependentSegments, kVideoPlaylistsOrder));
+
+  std::unique_ptr<MockMediaPlaylist> media_playlists[] = {
+      // AUDIO
+      CreateAudioPlaylist("audio-1.m3u8", "audio 1", "audio-group-1",
+                          "audiocodec", "en", kAudioChannels, kAudioMaxBitrate,
+                          kAudioAvgBitrate, kEC3JocComplexityZero,
+                          !kAC4IMSFlagEnabled, !kAC4CBIFlagEnabled),
+
+      // SUBTITLES
+      CreateTextPlaylist("text-1.m3u8", "text 1", "text-group-1", "textcodec",
+                         "en"),
+
+      // VIDEO
+      CreateVideoPlaylist("video-3.m3u8", "sdvideocodec", kVideoMaxBitrate,
+                          kVideoAvgBitrate),
+      CreateVideoPlaylist("video-1.m3u8", "sdvideocodec", kVideoMaxBitrate,
+                          kVideoAvgBitrate),
+      CreateVideoPlaylist("video-2.m3u8", "sdvideocodec", kVideoMaxBitrate,
+                          kVideoAvgBitrate),
+
+      // I-Frame
+      CreateIframePlaylist("iframe-1.m3u8", "sdvideocodec", kIframeMaxBitrate,
+                           kIframeAvgBitrate),
+      CreateIframePlaylist("iframe-2.m3u8", "sdvideocodec", kIframeMaxBitrate,
+                           kIframeAvgBitrate),
+      CreateIframePlaylist("iframe-3.m3u8", "sdvideocodec", kIframeMaxBitrate,
+                           kIframeAvgBitrate),
+  };
+
+  // Add all the media playlists to the master playlist.
+  std::vector<MediaPlaylist*> media_playlist_list;
+  for (const auto& media_playlist : media_playlists) {
+    media_playlist_list.push_back(media_playlist.get());
+  }
+
+  const char kBaseUrl[] = "http://playlists.org/";
+  EXPECT_TRUE(master_playlist_->WriteMasterPlaylist(kBaseUrl, test_output_dir_,
+                                                    media_playlist_list));
+
+  std::string actual;
+  ASSERT_TRUE(File::ReadFileToString(master_playlist_path_.c_str(), &actual));
+
+  const std::string expected =
+      "#EXTM3U\n"
+      "## Generated with https://github.com/google/shaka-packager version "
+      "test\n"
+      "\n"
+      "#EXT-X-MEDIA:TYPE=AUDIO,URI=\"http://playlists.org/"
+      "audio-1.m3u8\",GROUP-ID=\"audio-group-1\",LANGUAGE=\"en\",NAME=\"audio "
+      "1\",DEFAULT=YES,AUTOSELECT=YES,CHANNELS=\"2\"\n"
+      "\n"
+      "#EXT-X-MEDIA:TYPE=SUBTITLES,URI=\"http://playlists.org/"
+      "text-1.m3u8\",GROUP-ID=\"text-group-1\",LANGUAGE=\"en\",NAME=\"text "
+      "1\",AUTOSELECT=YES\n"
+      "\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=350000,AVERAGE-BANDWIDTH=130000,CODECS="
+      "\"sdvideocodec,audiocodec,textcodec\",RESOLUTION=800x600,AUDIO=\"audio-"
+      "group-1\",SUBTITLES=\"text-group-1\",CLOSED-CAPTIONS=NONE\nhttp://"
+      "playlists.org/video-1.m3u8\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=350000,AVERAGE-BANDWIDTH=130000,CODECS="
+      "\"sdvideocodec,audiocodec,textcodec\",RESOLUTION=800x600,AUDIO=\"audio-"
+      "group-1\",SUBTITLES=\"text-group-1\",CLOSED-CAPTIONS=NONE\nhttp://"
+      "playlists.org/video-2.m3u8\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=350000,AVERAGE-BANDWIDTH=130000,CODECS="
+      "\"sdvideocodec,audiocodec,textcodec\",RESOLUTION=800x600,AUDIO=\"audio-"
+      "group-1\",SUBTITLES=\"text-group-1\",CLOSED-CAPTIONS=NONE\nhttp://"
+      "playlists.org/video-3.m3u8\n"
+      "\n"
+      "#EXT-X-I-FRAME-STREAM-INF:BANDWIDTH=100000,AVERAGE-BANDWIDTH=80000,"
+      "CODECS=\"sdvideocodec\",RESOLUTION=800x600,CLOSED-CAPTIONS=NONE,URI="
+      "\"http://playlists.org/iframe-1.m3u8\"\n"
+      "#EXT-X-I-FRAME-STREAM-INF:BANDWIDTH=100000,AVERAGE-BANDWIDTH=80000,"
+      "CODECS=\"sdvideocodec\",RESOLUTION=800x600,CLOSED-CAPTIONS=NONE,URI="
+      "\"http://playlists.org/iframe-2.m3u8\"\n"
+      "#EXT-X-I-FRAME-STREAM-INF:BANDWIDTH=100000,AVERAGE-BANDWIDTH=80000,"
+      "CODECS=\"sdvideocodec\",RESOLUTION=800x600,CLOSED-CAPTIONS=NONE,URI="
+      "\"http://playlists.org/iframe-3.m3u8\"\n";
+
+  ASSERT_EQ(expected, actual);
+}
+
 TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnly) {
   const uint64_t kAudioChannels = 2;
   const uint64_t kAudioMaxBitrate = 50000;
@@ -801,7 +897,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnly) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -853,7 +949,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyJOC) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -905,7 +1001,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyAC4IMS) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }
@@ -958,7 +1054,7 @@ TEST_F(MasterPlaylistTest, WriteMasterPlaylistAudioOnlyAC4CBI) {
   };
 
   // Add all the media playlists to the master playlist.
-  std::list<MediaPlaylist*> media_playlist_list;
+  std::vector<MediaPlaylist*> media_playlist_list;
   for (const auto& media_playlist : media_playlists) {
     media_playlist_list.push_back(media_playlist.get());
   }

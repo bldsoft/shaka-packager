@@ -6,6 +6,66 @@
 
 #include <string>
 
+/**
+ * SHAKA_VERSION_MAJOR:
+ *
+ * The major version of shaka at compile time:
+ */
+#define SHAKA_VERSION_MAJOR (2)
+/**
+ * SHAKA_VERSION_MINOR:
+ *
+ * The minor version of shaka at compile time:
+ */
+#define SHAKA_VERSION_MINOR (6)
+/**
+ * SHAKA_VERSION_MICRO:
+ *
+ * The micro version of shaka at compile time:
+ */
+#define SHAKA_VERSION_MICRO (1)
+/**
+ * SHAKA_VERSION_NANO:
+ *
+ * The nano version of shaka at compile time:
+ */
+#define SHAKA_VERSION_NANO (0)
+
+/**
+ * SHAKA_CHECK_VERSION:
+ * @major: a number indicating the major version
+ * @minor: a number indicating the minor version
+ * @micro: a number indicating the micro version
+ *
+ * Check whether a shaka version equal to or greater than
+ * major.minor.micro is present.
+ */
+#define SHAKA_CHECK_VERSION(major, minor, micro)                        \
+  (SHAKA_VERSION_MAJOR > (major) ||                                     \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR > (minor)) || \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO >= (micro)) ||                                  \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO + 1 == (micro) && SHAKA_VERSION_NANO > 0))
+
+/**
+ * SHAKA_CHECK_VERSION_FULL:
+ * @major: a number indicating the major version
+ * @minor: a number indicating the minor version
+ * @micro: a number indicating the micro version
+ * @nano: a number indicating the nano version
+ *
+ * Check whether a shaka version equal to or greater than
+ * major.minor.micro.nano is present.
+ */
+#define SHAKA_CHECK_VERSION_FULL(major, minor, micro, nano)             \
+  (SHAKA_VERSION_MAJOR > (major) ||                                     \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR > (minor)) || \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO > (micro)) ||                                   \
+   (SHAKA_VERSION_MAJOR == (major) && SHAKA_VERSION_MINOR == (minor) && \
+    SHAKA_VERSION_MICRO == (micro) && SHAKA_VERSION_NANO >= (nano)))
+
 namespace shaka {
 
 /// @return URL of shaka-packager project.
