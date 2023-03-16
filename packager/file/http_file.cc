@@ -17,7 +17,8 @@
 #include "packager/base/threading/worker_pool.h"
 #include "packager/version/version.h"
 
-DEFINE_string(user_agent, "",
+DEFINE_string(user_agent,
+              "setplex setrix 1.0.9",
               "Set a custom User-Agent string for HTTP requests.");
 DEFINE_string(ca_file,
               "",
@@ -48,7 +49,7 @@ constexpr const int kMinLogLevelForCurlDebugFunction = 2;
 size_t CurlWriteCallback(char* buffer, size_t size, size_t nmemb, void* user) {
   IoCache* cache = reinterpret_cast<IoCache*>(user);
   size_t length = size * nmemb;
-  if (cache) {
+  if (cache && !cache->closed()) {
     length = cache->Write(buffer, length);
     VLOG(3) << "CurlWriteCallback length=" << length;
   } else {

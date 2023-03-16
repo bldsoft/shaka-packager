@@ -491,7 +491,11 @@ bool RepresentationXmlNode::AddLiveOnlyInfo(
   if (media_info.has_segment_template_url()) {
     RCHECK(segment_template.SetStringAttribute(
         "media", media_info.segment_template_url()));
-    RCHECK(segment_template.SetIntegerAttribute("startNumber", start_number));
+    if (low_latency_dash_mode) {
+      RCHECK(segment_template.SetIntegerAttribute("startNumber", 1));
+    } else {
+      RCHECK(segment_template.SetIntegerAttribute("startNumber", start_number));
+    }
   }
 
   if (!segment_infos.empty()) {

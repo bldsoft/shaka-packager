@@ -28,7 +28,7 @@ DEFINE_uint64(io_cache_size,
               "Size of the threaded I/O cache, in bytes. Specify 0 to disable "
               "threaded I/O.");
 DEFINE_uint64(io_block_size,
-              1ULL << 16,
+              8192ULL,
               "Size of the block size used for threaded I/O, in bytes.");
 
 // Needed for Windows weirdness which somewhere defines CopyFile as CopyFileW.
