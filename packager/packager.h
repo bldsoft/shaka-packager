@@ -13,6 +13,7 @@
 
 #include "packager/file/public/buffer_callback_params.h"
 #include "packager/hls/public/hls_params.h"
+#include "packager/media/base/container_names.h"
 #include "packager/media/public/ad_cue_generator_params.h"
 #include "packager/media/public/chunking_params.h"
 #include "packager/media/public/crypto_params.h"
@@ -81,6 +82,10 @@ struct PackagingParams {
 struct StreamDescriptor {
   /// Input/source media file path or network stream URL. Required.
   std::string input;
+
+  /// Predefined container name. The container name determination step is
+  /// skipped if a value is set.
+  media::MediaContainerName container_name = media::CONTAINER_UNKNOWN;
 
   /// Stream selector, can be `audio`, `video`, `text` or a zero based stream
   /// index. Required.

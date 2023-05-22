@@ -70,8 +70,11 @@ bool GetStreamIndex(const std::string& stream_label, size_t* stream_index) {
 namespace shaka {
 namespace media {
 
-Demuxer::Demuxer(const std::string& file_name, std::size_t init_buffer_size)
+Demuxer::Demuxer(const std::string& file_name,
+                 MediaContainerName container_name,
+                 std::size_t init_buffer_size)
     : file_name_(file_name),
+      container_name_(container_name),
       buffer_(new uint8_t[kBufSize]),
       init_buffer_size_{init_buffer_size == 0 ? kDefaultInitBufSize
                                               : init_buffer_size} {}
@@ -159,18 +162,20 @@ Status Demuxer::InitializeParser() {
                   "Cannot open file for reading " + file_name_);
   }
 
-  // Read enough bytes before detecting the container.
   int64_t bytes_read = 0;
-  while (static_cast<size_t>(bytes_read) < init_buffer_size_) {
-    int64_t read_result =
-        media_file_->Read(buffer_.get() + bytes_read, init_buffer_size_);
-    if (read_result < 0)
-      return Status(error::FILE_FAILURE, "Cannot read file " + file_name_);
-    if (read_result == 0)
-      break;
-    bytes_read += read_result;
+  if (container_name_ == CONTAINER_UNKNOWN) {
+    // Read enough bytes before detecting the container.
+    while (static_cast<size_t>(bytes_read) < init_buffer_size_) {
+      int64_t read_result =
+          media_file_->Read(buffer_.get() + bytes_read, init_buffer_size_);
+      if (read_result < 0)
+        return Status(error::FILE_FAILURE, "Cannot read file " + file_name_);
+      if (read_result == 0)
+        break;
+      bytes_read += read_result;
+    }
+    container_name_ = DetermineContainer(buffer_.get(), bytes_read);
   }
-  container_name_ = DetermineContainer(buffer_.get(), bytes_read);
 
   // Initialize media parser.
   switch (container_name_) {

@@ -50,14 +50,15 @@ class DemuxerTest : public MediaHandlerGraphTestBase {
 };
 
 TEST_F(DemuxerTest, FileNotFound) {
-  Demuxer demuxer("file_not_exist.mp4", kDefaultInitBufferSize);
+  Demuxer demuxer("file_not_exist.mp4", CONTAINER_UNKNOWN,
+                  kDefaultInitBufferSize);
   EXPECT_EQ(error::FILE_FAILURE, demuxer.Run().error_code());
 }
 
 TEST_F(DemuxerTest, EncryptedContentWithoutKeySource) {
   Demuxer demuxer(GetAppTestDataFilePath("encryption/bear-640x360-video.mp4")
                       .AsUTF8Unsafe(),
-                  kDefaultInitBufferSize);
+                  CONTAINER_UNKNOWN, kDefaultInitBufferSize);
   ASSERT_OK(demuxer.SetHandler("video", some_handler()));
   EXPECT_EQ(error::INVALID_ARGUMENT, demuxer.Run().error_code());
 }
@@ -70,7 +71,7 @@ TEST_F(DemuxerTest, EncryptedContentWithKeySource) {
 
   Demuxer demuxer(GetAppTestDataFilePath("encryption/bear-640x360-video.mp4")
                       .AsUTF8Unsafe(),
-                  kDefaultInitBufferSize);
+                  CONTAINER_UNKNOWN, kDefaultInitBufferSize);
   demuxer.SetKeySource(std::move(mock_key_source));
   ASSERT_OK(demuxer.SetHandler("video", some_handler()));
   EXPECT_OK(demuxer.Run());

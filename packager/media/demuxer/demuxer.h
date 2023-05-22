@@ -36,10 +36,15 @@ class Demuxer : public OriginHandler {
   /// @param file_name specifies the input source. It uses prefix matching to
   ///        create a proper File object. The user can extend File to support
   ///        a custom File object with its own prefix.
+  /// @param container_name specifies the container type. If the value is not
+  /// equal to CONTAINER_UNKNOWN, then the stage of determining the container
+  /// type will be skipped.
   /// @param init_buffer_size specifies the size of the init buffer. If value
   /// equals to 0 then uses kDefaultInitBufSize. Could be useful for text
   /// streams.
-  explicit Demuxer(const std::string& file_name, std::size_t init_buffer_size);
+  explicit Demuxer(const std::string& file_name,
+                   MediaContainerName container_name,
+                   std::size_t init_buffer_size);
   ~Demuxer();
 
   /// Set the KeySource for media decryption.
