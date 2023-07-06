@@ -77,8 +77,8 @@ struct PackagingParams {
   // from images using ocr.
   std::shared_ptr<const ocr::TextExtractorBuilder> text_extractor_builder;
 
-  // Log file name
-  std::string log_file_name;
+  // Path to log file
+  std::string log_file_path;
 };
 
 /// Defines a single input/output stream.

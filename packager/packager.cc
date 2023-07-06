@@ -881,7 +881,7 @@ Status Packager::Initialize(
   // Set up logging.
   logging::LoggingSettings log_settings;
   log_settings.logging_dest = logging::LOG_TO_FILE;
-  log_settings.log_file = packaging_params.log_file_name.c_str();
+  log_settings.log_file = packaging_params.log_file_path.c_str();
   CHECK(logging::InitLogging(log_settings));
 
   // Needed by base::WorkedPool used in ThreadedIoFile.
