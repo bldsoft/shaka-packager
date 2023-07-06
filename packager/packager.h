@@ -76,6 +76,9 @@ struct PackagingParams {
   // Text extractor builder for building objects which able to recognize text
   // from images using ocr.
   std::shared_ptr<const ocr::TextExtractorBuilder> text_extractor_builder;
+
+  // Log file name
+  std::string log_file_name;
 };
 
 /// Defines a single input/output stream.

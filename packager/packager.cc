@@ -15,6 +15,7 @@
 #include "packager/app/single_thread_job_manager.h"
 #include "packager/app/stream_descriptor.h"
 #include "packager/base/at_exit.h"
+#include "packager/base/command_line.h"
 #include "packager/base/files/file_path.h"
 #include "packager/base/logging.h"
 #include "packager/base/optional.h"
@@ -485,8 +486,8 @@ bool StreamInfoToTextMediaInfo(const StreamDescriptor& stream_descriptor,
 Status CreateDemuxer(const StreamDescriptor& stream,
                      const PackagingParams& packaging_params,
                      std::shared_ptr<Demuxer>* new_demuxer) {
-  std::shared_ptr<Demuxer> demuxer =
-      std::make_shared<Demuxer>(stream.input, stream.container_name, stream.init_buffer_size);
+  std::shared_ptr<Demuxer> demuxer = std::make_shared<Demuxer>(
+      stream.input, stream.container_name, stream.init_buffer_size);
   demuxer->set_dump_stream_info(packaging_params.test_params.dump_stream_info);
 
   if (packaging_params.decryption_params.key_provider != KeyProvider::kNone) {
@@ -874,6 +875,15 @@ Packager::~Packager() {}
 Status Packager::Initialize(
     const PackagingParams& packaging_params,
     const std::vector<StreamDescriptor>& stream_descriptors) {
+  // Needed to enable VLOG/DVLOG through --vmodule or --v.
+  base::CommandLine::Init(0, NULL);
+
+  // Set up logging.
+  logging::LoggingSettings log_settings;
+  log_settings.logging_dest = logging::LOG_TO_FILE;
+  log_settings.log_file = packaging_params.log_file_name.c_str();
+  CHECK(logging::InitLogging(log_settings));
+
   // Needed by base::WorkedPool used in ThreadedIoFile.
   static base::AtExitManager exit;
   static media::LibcryptoThreading libcrypto_threading;
