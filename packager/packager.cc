@@ -1052,6 +1052,8 @@ void Packager::Cancel() {
     return;
   }
   internal_->job_manager->CancelJobs();
+
+  logging::CloseLogFile();
 }
 
 std::string Packager::GetLibraryVersion() {
