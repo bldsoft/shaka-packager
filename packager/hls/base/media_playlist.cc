@@ -374,8 +374,8 @@ MediaPlaylist::MediaPlaylist(const HlsParams& hls_params,
           hls_params_.discontinuity_sequence_number) {
   start_timestamp_ = base::Time::Now().ToDoubleT();
   // When there's a forced media_sequence_number, start with discontinuity
-  // if (media_sequence_number_ > 0)
-  // entries_.emplace_back(new DiscontinuityEntry());
+  if (media_sequence_number_ > 0)
+    entries_.emplace_back(new DiscontinuityEntry());
 }
 
 MediaPlaylist::~MediaPlaylist() {}
