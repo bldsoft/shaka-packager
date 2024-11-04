@@ -379,7 +379,7 @@ bool DvbSubParser::Parse2BitPixelData(bool is_top_fields,
             uint8_t count_minus_29;
             RCHECK(reader->ReadBits(8, &count_minus_29));
             RCHECK(reader->ReadBits(2, &peek));
-            for (uint8_t i = 0; i < count_minus_29 + 29; i++)
+            for (uint16_t i = 0; i < count_minus_29 + 29; i++)
               RCHECK(image->AddPixel(BitDepth::k2Bit, peek, is_top_fields));
           }
         }
