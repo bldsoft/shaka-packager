@@ -12,6 +12,7 @@
 #include "packager/base/logging.h"
 #include "packager/base/strings/string_number_conversions.h"
 #include "packager/file/file.h"
+#include "packager/media/base/container_names.h"
 #include "packager/media/base/decryptor_source.h"
 #include "packager/media/base/key_source.h"
 #include "packager/media/base/macros.h"
@@ -156,7 +157,7 @@ Status Demuxer::InitializeParser() {
 
   LOG(INFO) << "Initialize Demuxer for file '" << file_name_ << "'.";
 
-  media_file_ = File::Open(file_name_.c_str(), "r");
+  media_file_ = File::Open(file_name_.c_str(), "r", container_name_);
   if (!media_file_) {
     return Status(error::FILE_FAILURE,
                   "Cannot open file for reading " + file_name_);

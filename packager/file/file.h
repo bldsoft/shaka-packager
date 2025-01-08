@@ -13,6 +13,7 @@
 
 #include "packager/base/macros.h"
 #include "packager/file/public/buffer_callback_params.h"
+#include "packager/media/base/container_names.h"
 #include "packager/status.h"
 
 namespace shaka {
@@ -33,7 +34,10 @@ class SHAKA_EXPORT File {
   /// @param file_name contains the name of the file to be accessed.
   /// @param mode contains file access mode. Implementation dependent.
   /// @return A File pointer on success, false otherwise.
-  static File* Open(const char* file_name, const char* mode);
+  static File* Open(
+      const char* file_name,
+      const char* mode,
+      media::MediaContainerName container_name = media::CONTAINER_UNKNOWN);
 
   /// Open the specified file in direct-access mode (no buffering).
   /// This is a file factory method, it opens a proper file automatically
@@ -183,7 +187,9 @@ class SHAKA_EXPORT File {
 
   // This is a file factory method, it creates a proper file, e.g.
   // LocalFile, MemFile based on prefix.
-  static File* Create(const char* file_name, const char* mode);
+  static File* Create(const char* file_name,
+                      const char* mode,
+                      media::MediaContainerName container_name);
 
   static File* CreateInternalFile(const char* file_name, const char* mode);
 

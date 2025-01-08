@@ -155,7 +155,9 @@ const FileTypeInfo* GetFileTypeInfo(base::StringPiece file_name,
 
 }  // namespace
 
-File* File::Create(const char* file_name, const char* mode) {
+File* File::Create(const char* file_name,
+                   const char* mode,
+                   media::MediaContainerName container_name) {
   std::unique_ptr<File, FileCloser> internal_file(
       CreateInternalFile(file_name, mode));
 
@@ -167,11 +169,13 @@ File* File::Create(const char* file_name, const char* mode) {
   }
 
   if (FLAGS_io_cache_size) {
+    const auto block_size =
+        (container_name == media::CONTAINER_WEBVTT) ? 256 : FLAGS_io_block_size;
     // Enable threaded I/O for "r", "w", and "a" modes only.
     if (!strcmp(mode, "r")) {
       return new ThreadedIoFile(std::move(internal_file),
                                 ThreadedIoFile::kInputMode, FLAGS_io_cache_size,
-                                FLAGS_io_block_size);
+                                block_size);
     } else if (!strcmp(mode, "w") || !strcmp(mode, "a")) {
       return new ThreadedIoFile(std::move(internal_file),
                                 ThreadedIoFile::kOutputMode,
@@ -192,8 +196,10 @@ File* File::CreateInternalFile(const char* file_name, const char* mode) {
   return file_type->factory_function(real_file_name.data(), mode);
 }
 
-File* File::Open(const char* file_name, const char* mode) {
-  File* file = File::Create(file_name, mode);
+File* File::Open(const char* file_name,
+                 const char* mode,
+                 media::MediaContainerName container_name) {
+  File* file = File::Create(file_name, mode, container_name);
   if (!file)
     return NULL;
   if (!file->Open()) {
