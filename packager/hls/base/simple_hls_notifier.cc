@@ -367,6 +367,28 @@ bool SimpleHlsNotifier::NotifyNewSegment(uint32_t stream_id,
   const std::string& segment_url =
       GenerateSegmentUrl(segment_name, hls_params().base_url,
                          master_playlist_dir_, media_playlist->file_name());
+
+  if (hls_params().program_date_time_mode != ProgramDateTimeMode::kNone) {
+    if (reference_time_ == absl::Time()) {
+      reference_time_ = absl::Now();
+      LOG(INFO) << "The reference time: " << reference_time_;
+    }
+    if (media_playlist->IsDiscontinuity(start_time)) {
+      // After a discontinuity, the new reference time should be set for all
+      // playlists to the first segment that passes the IsDiscontinuity check
+      if (absl::Now() - reference_time_ > absl::Seconds(duration)) {
+        reference_time_ = absl::Now();
+        LOG(INFO) << "The reference time has been changed "
+                     "due to a discontinuity: "
+                  << reference_time_;
+      }
+    }
+    if (media_playlist->GetReferenceTime() == absl::Time() ||
+        media_playlist->IsDiscontinuity(start_time)) {
+      media_playlist->SetReferenceTime(reference_time_);
+    }
+  }
+
   media_playlist->AddSegment(segment_url, start_time, duration,
                              start_byte_offset, size);
 

@@ -186,6 +186,19 @@ bool GetHlsPlaylistType(const std::string& playlist_type,
   return true;
 }
 
+ProgramDateTimeMode GetProgramDateTimeMode(const std::string& mode) {
+  if (!mode.empty()) {
+    if (absl::AsciiStrToUpper(mode) == "ALL") {
+      return ProgramDateTimeMode::kAll;
+    } else if (absl::AsciiStrToUpper(mode) == "FIRST") {
+      return ProgramDateTimeMode::kFirst;
+    } else {
+      LOG(ERROR) << "Unrecognized program date time mode " << mode;
+    }
+  }
+  return ProgramDateTimeMode::kNone;
+}
+
 bool GetProtectionScheme(uint32_t* protection_scheme) {
   if (absl::GetFlag(FLAGS_protection_scheme) == "cenc") {
     *protection_scheme = EncryptionParams::kProtectionSchemeCenc;
@@ -544,6 +557,8 @@ std::optional<PackagingParams> GetPackagingParams() {
       absl::GetFlag(FLAGS_hls_media_sequence_number);
   hls_params.start_time_offset = absl::GetFlag(FLAGS_hls_start_time_offset);
   hls_params.create_session_keys = absl::GetFlag(FLAGS_create_session_keys);
+  hls_params.program_date_time_mode =
+      GetProgramDateTimeMode(absl::GetFlag(FLAGS_hls_program_date_time_mode));
 
   TestParams& test_params = packaging_params.test_params;
   test_params.dump_stream_info = absl::GetFlag(FLAGS_dump_stream_info);

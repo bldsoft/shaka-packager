@@ -98,3 +98,10 @@ HLS options
 
     Playback of Offline HLS assets shall use EXT-X-SESSION-KEY to declare all 
     eligible content keys in the master playlist.
+
+--hls_program_date_time_mode <mode>
+
+    ALL or FIRST. Adds EXT-X-PROGRAM-DATE-TIME tags to media playlists.
+    When set to ALL, the tag will be added after each segment.
+    When set to FIRST, it will be added before the first segment in the playlist
+    and before the first segment after EXT-X-DISCONTINUITY.

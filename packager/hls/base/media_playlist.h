@@ -204,6 +204,14 @@ class MediaPlaylist {
   /// @param target_duration is the target duration for this playlist.
   virtual void SetTargetDuration(int32_t target_duration);
 
+  /// Sets a new value for the reference time,
+  /// allowing the calculation of absolute time based on the start time.
+  /// @param reference_time The new reference time to be set.
+  void SetReferenceTime(absl::Time reference_time);
+
+  /// @return Current value of the reference time.
+  absl::Time GetReferenceTime() { return reference_time_; };
+
   /// @return number of channels for audio. 0 is returned for video.
   virtual int GetNumChannels() const;
 
@@ -235,6 +243,11 @@ class MediaPlaylist {
   /// @return the language of the media, as an ISO language tag in its shortest
   ///         form.  May be an empty string for video.
   const std::string& language() const { return language_; }
+
+  /// @param start_time Start time of the segment to check if there was a
+  /// discontinuity between this segment and the last one added to the playlist.
+  /// @return Result of the discontinuity check.
+  bool IsDiscontinuity(int64_t start_time) const;
 
   const std::vector<std::string>& characteristics() const {
     return characteristics_;
@@ -301,6 +314,9 @@ class MediaPlaylist {
   bool target_duration_set_ = false;
   int32_t target_duration_ = 0;
 
+  // Reference time is the absolute time relative to the start time
+  absl::Time reference_time_;
+
   // TODO(kqyang): This could be managed better by a separate class, than having
   // all them managed in MediaPlaylist.
   std::list<std::unique_ptr<HlsEntry>> entries_;
@@ -308,6 +324,9 @@ class MediaPlaylist {
   // A list to hold the file names of the segments to be removed temporarily.
   // Once a file is actually removed, it is removed from the list.
   std::list<std::string> segments_to_be_removed_;
+
+  // Store the last start time to be able to detect discontinuities
+  int64_t last_start_time_ = 0;
 
   // Used by kVideoIFrameOnly playlists to track the i-frames (key frames).
   struct KeyFrameInfo {
