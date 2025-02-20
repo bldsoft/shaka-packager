@@ -542,6 +542,8 @@ std::optional<PackagingParams> GetPackagingParams() {
   hls_params.default_text_language = absl::GetFlag(FLAGS_default_text_language);
   hls_params.media_sequence_number =
       absl::GetFlag(FLAGS_hls_media_sequence_number);
+  hls_params.discontinuity_sequence_number =
+      absl::GetFlag(FLAGS_hls_discontinuity_sequence_number);
   hls_params.start_time_offset = absl::GetFlag(FLAGS_hls_start_time_offset);
   hls_params.create_session_keys = absl::GetFlag(FLAGS_create_session_keys);
 

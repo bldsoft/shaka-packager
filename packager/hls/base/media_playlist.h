@@ -285,8 +285,8 @@ class MediaPlaylist {
   std::vector<std::string> characteristics_;
   bool forced_subtitle_ = false;
   uint32_t media_sequence_number_ = 0;
+  uint32_t discontinuity_sequence_number_ = 0;
   bool inserted_discontinuity_tag_ = false;
-  int discontinuity_sequence_number_ = 0;
 
   double longest_segment_duration_seconds_ = 0.0;
   int32_t time_scale_ = 0;
