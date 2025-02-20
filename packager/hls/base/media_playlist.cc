@@ -16,6 +16,7 @@
 #include <absl/log/log.h>
 #include <absl/strings/numbers.h>
 #include <absl/strings/str_format.h>
+#include <absl/time/time.h>
 
 #include <packager/file.h>
 #include <packager/hls/base/tag.h>
@@ -28,7 +29,7 @@ namespace shaka {
 namespace hls {
 
 namespace {
-int32_t GetTimeScale(const MediaInfo& media_info) {
+int32_t GetTimeScaleFromMediaInfo(const MediaInfo& media_info) {
   if (media_info.has_reference_time_scale())
     return media_info.reference_time_scale();
 
@@ -165,7 +166,6 @@ std::string CreatePlaylistHeader(
   return header;
 }
 
-
 }  // namespace
 
 HlsEntry::HlsEntry(HlsEntry::EntryType type) : type_(type) {}
@@ -181,6 +181,7 @@ class SegmentInfoEntry : public HlsEntry {
   // |duration_seconds| is duration in seconds.
   SegmentInfoEntry(const std::string& file_name,
                    int64_t start_time,
+                   absl::Time start_time_absolute,
                    double duration_seconds,
                    bool use_byte_range,
                    uint64_t start_byte_offset,
@@ -193,6 +194,7 @@ class SegmentInfoEntry : public HlsEntry {
   void set_duration_seconds(double duration_seconds) {
     duration_seconds_ = duration_seconds;
   }
+  void set_program_date_time(bool value) { program_date_time_ = value; }
 
  private:
   SegmentInfoEntry(const SegmentInfoEntry&) = delete;
@@ -200,7 +202,9 @@ class SegmentInfoEntry : public HlsEntry {
 
   const std::string file_name_;
   const int64_t start_time_;
+  const absl::Time start_time_absolute_;
   double duration_seconds_;
+  bool program_date_time_ = false;
   const bool use_byte_range_;
   const uint64_t start_byte_offset_;
   const uint64_t segment_file_size_;
@@ -209,6 +213,7 @@ class SegmentInfoEntry : public HlsEntry {
 
 SegmentInfoEntry::SegmentInfoEntry(const std::string& file_name,
                                    int64_t start_time,
+                                   absl::Time start_time_absolute,
                                    double duration_seconds,
                                    bool use_byte_range,
                                    uint64_t start_byte_offset,
@@ -217,6 +222,7 @@ SegmentInfoEntry::SegmentInfoEntry(const std::string& file_name,
     : HlsEntry(HlsEntry::EntryType::kExtInf),
       file_name_(file_name),
       start_time_(start_time),
+      start_time_absolute_(start_time_absolute),
       duration_seconds_(duration_seconds),
       use_byte_range_(use_byte_range),
       start_byte_offset_(start_byte_offset),
@@ -224,7 +230,17 @@ SegmentInfoEntry::SegmentInfoEntry(const std::string& file_name,
       previous_segment_end_offset_(previous_segment_end_offset) {}
 
 std::string SegmentInfoEntry::ToString() {
-  std::string result = absl::StrFormat("#EXTINF:%.3f,", duration_seconds_);
+  std::string result;
+
+  if (program_date_time_) {
+    absl::StrAppendFormat(
+        &result, "#EXT-X-PROGRAM-DATE-TIME:%s\n",
+        absl::FormatTime("%Y-%m-%dT%H:%M:%E3SZ", start_time_absolute_,
+                         absl::UTCTimeZone()));
+    program_date_time_ = false;
+  }
+
+  absl::StrAppendFormat(&result, "#EXTINF:%.3f,", duration_seconds_);
 
   if (use_byte_range_) {
     absl::StrAppendFormat(&result, "\n#EXT-X-BYTERANGE:%" PRIu64,
@@ -238,7 +254,6 @@ std::string SegmentInfoEntry::ToString() {
 
   return result;
 }
-
 
 class DiscontinuityEntry : public HlsEntry {
  public:
@@ -339,10 +354,10 @@ MediaPlaylist::MediaPlaylist(const HlsParams& hls_params,
       name_(name),
       group_id_(group_id),
       media_sequence_number_(hls_params_.media_sequence_number) {
-        // When there's a forced media_sequence_number, start with discontinuity
-        if (media_sequence_number_ > 0)
-          entries_.emplace_back(new DiscontinuityEntry());
-      }
+  // When there's a forced media_sequence_number, start with discontinuity
+  if (media_sequence_number_ > 0)
+    entries_.emplace_back(new DiscontinuityEntry());
+}
 
 MediaPlaylist::~MediaPlaylist() {}
 
@@ -380,7 +395,7 @@ void MediaPlaylist::AddEncryptionInfoForTesting(
 }
 
 bool MediaPlaylist::SetMediaInfo(const MediaInfo& media_info) {
-  const int32_t time_scale = GetTimeScale(media_info);
+  const int32_t time_scale = GetTimeScaleFromMediaInfo(media_info);
   if (time_scale == 0) {
     LOG(ERROR) << "MediaInfo does not contain a valid timescale.";
     return false;
@@ -497,8 +512,32 @@ bool MediaPlaylist::WriteToFile(const std::filesystem::path& file_path) {
       media_sequence_number_, discontinuity_sequence_number_,
       hls_params_.start_time_offset);
 
-  for (const auto& entry : entries_)
+  bool program_date_time =
+      hls_params_.program_date_time_mode != ProgramDateTimeMode::kNone;
+
+  for (const auto& entry : entries_) {
+    switch (entry->type()) {
+      case HlsEntry::EntryType::kExtInf:
+        if (program_date_time) {
+          reinterpret_cast<SegmentInfoEntry*>(entry.get())
+              ->set_program_date_time(true);
+
+          if (hls_params_.program_date_time_mode ==
+              ProgramDateTimeMode::kFirst) {
+            program_date_time = false;
+          }
+        }
+        break;
+      case HlsEntry::EntryType::kExtDiscontinuity:
+        program_date_time =
+            hls_params_.program_date_time_mode != ProgramDateTimeMode::kNone;
+        break;
+      default:
+        break;
+    }
+
     absl::StrAppendFormat(&content, "%s\n", entry->ToString().c_str());
+  }
 
   if (hls_params_.playlist_type == HlsPlaylistType::kVod) {
     content += "#EXT-X-ENDLIST\n";
@@ -534,6 +573,10 @@ void MediaPlaylist::SetTargetDuration(int32_t target_duration) {
   }
   target_duration_ = target_duration;
   target_duration_set_ = true;
+}
+
+void MediaPlaylist::SetReferenceTime(absl::Time reference_time) {
+  reference_time_ = reference_time;
 }
 
 int MediaPlaylist::GetNumChannels() const {
@@ -610,6 +653,10 @@ double MediaPlaylist::GetFrameRate() const {
          media_info_.video_info().frame_duration();
 }
 
+bool MediaPlaylist::IsDiscontinuity(int64_t start_time) const {
+  return start_time < last_start_time_;
+}
+
 void MediaPlaylist::AddSegmentInfoEntry(const std::string& segment_file_name,
                                         int64_t start_time,
                                         int64_t duration,
@@ -620,8 +667,8 @@ void MediaPlaylist::AddSegmentInfoEntry(const std::string& segment_file_name,
                  << " cannot be calculated. The output will be wrong.";
 
     entries_.emplace_back(new SegmentInfoEntry(
-        segment_file_name, 0.0, 0.0, use_byte_range_, start_byte_offset, size,
-        previous_segment_end_offset_));
+        segment_file_name, 0.0, absl::Time(), 0.0, use_byte_range_,
+        start_byte_offset, size, previous_segment_end_offset_));
     return;
   }
 
@@ -639,22 +686,25 @@ void MediaPlaylist::AddSegmentInfoEntry(const std::string& segment_file_name,
   bandwidth_estimator_.AddBlock(size, segment_duration_seconds);
   current_buffer_depth_ += segment_duration_seconds;
 
-  if (!entries_.empty() &&
-      entries_.back()->type() == HlsEntry::EntryType::kExtInf) {
-    const SegmentInfoEntry* segment_info =
-        static_cast<SegmentInfoEntry*>(entries_.back().get());
-    if (segment_info->start_time() > start_time) {
-      LOG(WARNING)
-          << "Insert a discontinuity tag after the segment with start time "
-          << segment_info->start_time() << " as the next segment starts at "
-          << start_time << ".";
-      entries_.emplace_back(new DiscontinuityEntry());
-    }
+  if (!entries_.empty() && IsDiscontinuity(start_time)) {
+    LOG(WARNING)
+        << "Insert a discontinuity tag after the segment with start time "
+        << last_start_time_ << " as the next segment starts at " << start_time
+        << ".";
+    entries_.emplace_back(new DiscontinuityEntry());
+  }
+  last_start_time_ = start_time;
+
+  absl::Time start_time_absolute;
+  if (reference_time_ != absl::Time()) {
+    start_time_absolute =
+        reference_time_ + absl::Seconds(start_time / time_scale_);
   }
 
   entries_.emplace_back(new SegmentInfoEntry(
-      segment_file_name, start_time, segment_duration_seconds, use_byte_range_,
-      start_byte_offset, size, previous_segment_end_offset_));
+      segment_file_name, start_time, start_time_absolute,
+      segment_duration_seconds, use_byte_range_, start_byte_offset, size,
+      previous_segment_end_offset_));
   previous_segment_end_offset_ = start_byte_offset + size - 1;
 }
 

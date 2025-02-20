@@ -457,6 +457,95 @@ TEST_F(MediaPlaylistMultiSegmentTest, WriteToFileWithClearLead) {
   ASSERT_FILE_STREQ(kMemoryFilePath, kExpectedOutput);
 }
 
+TEST_F(MediaPlaylistMultiSegmentTest, ProgramDateTime) {
+  // kMode, kExpectedOutput
+  const std::vector<std::pair<ProgramDateTimeMode, std::string>> test_data = {
+      {ProgramDateTimeMode::kAll,
+       "#EXTM3U\n"
+       "#EXT-X-VERSION:6\n"
+       "## Generated with https://github.com/shaka-project/shaka-packager "
+       "version test\n"
+       "#EXT-X-TARGETDURATION:10\n"
+       "#EXT-X-PLAYLIST-TYPE:VOD\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:00:00.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:00:10.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:00:20.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-DISCONTINUITY\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:01:00.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:01:10.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:01:20.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-ENDLIST\n"},
+      {ProgramDateTimeMode::kFirst,
+       "#EXTM3U\n"
+       "#EXT-X-VERSION:6\n"
+       "## Generated with https://github.com/shaka-project/shaka-packager "
+       "version test\n"
+       "#EXT-X-TARGETDURATION:10\n"
+       "#EXT-X-PLAYLIST-TYPE:VOD\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:00:00.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-DISCONTINUITY\n"
+       "#EXT-X-PROGRAM-DATE-TIME:2025-01-01T12:01:00.000Z\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXTINF:10.000,\n"
+       "file.mp4\n"
+       "#EXT-X-ENDLIST\n"}};
+
+  for (const auto& [kMode, kExpectedOutput] : test_data) {
+    hls_params_.program_date_time_mode = kMode;
+    media_playlist_.reset(new MediaPlaylist(hls_params_, default_file_name_,
+                                            default_name_, default_group_id_));
+
+    valid_video_media_info_.set_reference_time_scale(kTimeScale);
+    ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
+
+    absl::Time reference_time;
+    uint64_t duration = 10 * kTimeScale;
+
+    ASSERT_TRUE(absl::ParseTime(absl::RFC3339_full, "2025-01-01T06:00:00-06:00",
+                                &reference_time, nullptr));
+    media_playlist_->SetReferenceTime(reference_time);
+    for (int i = 0; i < 3; ++i) {
+      media_playlist_->AddSegment("file.mp4", duration * i, duration,
+                                  kZeroByteOffset, 1 * kMBytes);
+    }
+
+    // #EXT-X-DISCONTINUITY
+
+    ASSERT_TRUE(absl::ParseTime(absl::RFC3339_full, "2025-01-01T06:01:00-06:00",
+                                &reference_time, nullptr));
+    media_playlist_->SetReferenceTime(reference_time);
+    for (int i = 0; i < 3; ++i) {
+      media_playlist_->AddSegment("file.mp4", duration * i, duration,
+                                  kZeroByteOffset, 1 * kMBytes);
+    }
+
+    const char kMemoryFilePath[] = "memory://media.m3u8";
+    EXPECT_TRUE(media_playlist_->WriteToFile(kMemoryFilePath));
+    ASSERT_FILE_STREQ(kMemoryFilePath, kExpectedOutput);
+  }
+}
+
 TEST_F(MediaPlaylistMultiSegmentTest, GetLanguage) {
   MediaInfo media_info;
   media_info.set_reference_time_scale(kTimeScale);

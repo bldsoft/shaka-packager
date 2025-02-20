@@ -94,6 +94,8 @@ class SimpleHlsNotifier : public HlsNotifier {
 
   absl::Mutex lock_;
 
+  absl::Time reference_time_;
+
   DISALLOW_COPY_AND_ASSIGN(SimpleHlsNotifier);
 };
 
