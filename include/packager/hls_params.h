@@ -21,6 +21,9 @@ enum class HlsPlaylistType {
   kLive,
 };
 
+/// Defines the modes for EXT-X-PROGRAM-DATE-TIME.
+enum class ProgramDateTimeMode { kNone = 0, kAll, kFirst };
+
 /// HLS related parameters.
 struct HlsParams {
   /// HLS playlist type. See HLS specification for details.
@@ -72,6 +75,11 @@ struct HlsParams {
   std::optional<double> start_time_offset;
   /// Create EXT-X-SESSION-KEY in master playlist
   bool create_session_keys;
+  /// Adds EXT-X-PROGRAM-DATE-TIME tags to media playlists.
+  /// kAll - adds the tag before each segment.
+  /// kFirst - adds the tag before the first segment in the playlist
+  /// and before the first segment after EXT-X-DISCONTINUITY.
+  ProgramDateTimeMode program_date_time_mode = ProgramDateTimeMode::kNone;
 };
 
 }  // namespace shaka

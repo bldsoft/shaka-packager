@@ -9,6 +9,7 @@
 #include <cmath>
 #include <filesystem>
 #include <optional>
+#include "absl/time/time.h"
 
 #include <absl/flags/flag.h>
 #include <absl/log/check.h>
@@ -367,6 +368,35 @@ bool SimpleHlsNotifier::NotifyNewSegment(uint32_t stream_id,
   const std::string& segment_url =
       GenerateSegmentUrl(segment_name, hls_params().base_url,
                          master_playlist_dir_, media_playlist->file_name());
+
+  if (hls_params().program_date_time_mode != ProgramDateTimeMode::kNone) {
+    static auto CalculateReferenceTime = [&]() {
+      return absl::Now() -
+             absl::Seconds(duration / media_playlist->GetTimeScale());
+    };
+
+    if (reference_time_ == absl::Time()) {
+      reference_time_ = CalculateReferenceTime();
+      LOG(INFO) << "The reference time: " << reference_time_;
+    }
+    if (media_playlist->IsDiscontinuity(start_time)) {
+      // After a discontinuity, the new reference time should be set for all
+      // playlists to the first segment that passes the IsDiscontinuity check
+      if (CalculateReferenceTime() - reference_time_ >
+          absl::Seconds(duration / media_playlist->GetTimeScale())) {
+        reference_time_ = CalculateReferenceTime();
+        LOG(INFO) << "The reference time has been changed "
+                     "due to a discontinuity: "
+                  << reference_time_;
+      }
+    }
+
+    if (media_playlist->GetReferenceTime() == absl::Time() ||
+        media_playlist->IsDiscontinuity(start_time)) {
+      media_playlist->SetReferenceTime(reference_time_);
+    }
+  }
+
   media_playlist->AddSegment(segment_url, start_time, duration,
                              start_byte_offset, size);
 

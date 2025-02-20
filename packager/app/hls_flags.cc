@@ -51,3 +51,10 @@ ABSL_FLAG(bool,
           false,
           "Playback of Offline HLS assets shall use EXT-X-SESSION-KEY "
           "to declare all eligible content keys in the master playlist.");
+ABSL_FLAG(std::string,
+          hls_program_date_time_mode,
+          "",
+          "ALL or FIRST. Adds EXT-X-PROGRAM-DATE-TIME tags to media playlists. "
+          "When set to ALL, the tag will be added before each segment. "
+          "When set to FIRST, it will be added before the first segment in the "
+          "playlist and before the first segment after EXT-X-DISCONTINUITY");
