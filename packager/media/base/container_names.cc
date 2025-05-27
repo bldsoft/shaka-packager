@@ -1734,7 +1734,7 @@ MediaContainerName DetermineContainerFromFormatName(
   } else if (base::EqualsCaseInsensitiveASCII(format_name, "ec3") ||
              base::EqualsCaseInsensitiveASCII(format_name, "eac3")) {
     return CONTAINER_EAC3;
-  } else if (base::EqualsCaseInsensitiveASCII(format_name, "mp3")) {
+  } else if (base::EqualsCaseInsensitiveASCII(format_name, "mp4a.40.34")) {
     return CONTAINER_MP3;
   } else if (base::EqualsCaseInsensitiveASCII(format_name, "webm")) {
     return CONTAINER_WEBM;
