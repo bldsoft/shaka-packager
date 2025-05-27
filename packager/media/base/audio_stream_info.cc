@@ -163,7 +163,8 @@ std::string AudioStreamInfo::GetCodecString(Codec codec,
     case kCodecOpus:
       return "opus";
     case kCodecMP3:
-      return "mp3";
+      //https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/StreamingMediaGuide/FrequentlyAskedQuestions/FrequentlyAskedQuestions.html
+      return "mp4a.40.34";
     case kCodecVorbis:
       return "vorbis";
     case kCodecMha1:

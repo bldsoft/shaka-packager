@@ -219,7 +219,7 @@ TEST(ContainerNamesTest, FileCheckWEBM) {
 }
 
 TEST(ContainerNamesTest, FileCheckMP3) {
-  TestFile(CONTAINER_MP3, GetTestDataFilePath("id3_test.mp3"));
+  TestFile(CONTAINER_MP3, GetTestDataFilePath("id3_test.mp4a.40.34"));
 }
 
 TEST(ContainerNamesTest, FileCheckAC3) {
