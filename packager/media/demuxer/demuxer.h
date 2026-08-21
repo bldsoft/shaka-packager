@@ -84,6 +84,14 @@ class Demuxer : public OriginHandler {
     input_format_ = input_format;
   }
 
+  /// Set how many bytes are buffered before the input container format is
+  /// autodetected. If not set or set to 0, a default of 65536 bytes is used.
+  /// A smaller value is useful for text streams, which may need a long time to
+  /// produce that much data. It has no effect if the input format is set.
+  void set_init_buffer_size(size_t init_buffer_size) {
+    init_buffer_size_ = init_buffer_size;
+  }
+
  protected:
   /// @name MediaHandler implementation overrides.
   /// @{
@@ -159,6 +167,9 @@ class Demuxer : public OriginHandler {
   Status init_event_status_;
   // Explicitly defined input format, for avoiding autodetection.
   std::string input_format_;
+  // Explicitly defined size of the container detection buffer; 0 means the
+  // default size.
+  size_t init_buffer_size_ = 0;
 };
 
 }  // namespace media

@@ -74,6 +74,16 @@ These are the available fields:
     'input_format=webvtt' as selector parameter will tell shaka packager
     to omit autodetection and consider WebVTT format for that stream.
 
+:init_buffer_size:
+
+    Optional value which specifies how many bytes are buffered before the input
+    container format is autodetected. If not specified or set to 0, a default of
+    65536 bytes is used.
+
+    A smaller value is useful for text streams, which may need a long time to
+    produce that much data, delaying the start of packaging. It has no effect
+    when **input_format** is specified, as no autodetection is performed then.
+
 :trick_play_factor (tpf):
 
     Optional value which specifies the trick play, a.k.a. trick mode, stream

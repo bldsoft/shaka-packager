@@ -50,6 +50,7 @@ enum FieldType {
   kDashLabelField,
   kForcedSubtitleField,
   kInputFormatField,
+  kInitBufferSizeField,
 };
 
 struct FieldNameToTypeMapping {
@@ -100,6 +101,7 @@ const FieldNameToTypeMapping kFieldNameTypeMappings[] = {
     {"dash_label", kDashLabelField},
     {"forced_subtitle", kForcedSubtitleField},
     {"input_format", kInputFormatField},
+    {"init_buffer_size", kInitBufferSizeField},
 };
 
 FieldType GetFieldType(const std::string& field_name) {
@@ -283,6 +285,16 @@ std::optional<StreamDescriptor> ParseStreamDescriptor(
         break;
       case kInputFormatField: {
         descriptor.input_format = pair.second;
+        break;
+      }
+      case kInitBufferSizeField: {
+        unsigned init_buffer_size;
+        if (!absl::SimpleAtoi(pair.second, &init_buffer_size)) {
+          LOG(ERROR) << "Non-numeric init buffer size " << pair.second
+                     << " specified.";
+          return std::nullopt;
+        }
+        descriptor.init_buffer_size = init_buffer_size;
         break;
       }
       default:

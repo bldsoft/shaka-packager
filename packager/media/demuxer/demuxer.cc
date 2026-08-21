@@ -178,10 +178,18 @@ Status Demuxer::InitializeParser() {
   int64_t bytes_read = 0;
   bool eof = false;
   if (input_format_.empty()) {
+    size_t init_buffer_size =
+        init_buffer_size_ == 0 ? kInitBufSize : init_buffer_size_;
+    if (init_buffer_size > kBufSize) {
+      LOG(WARNING) << "Requested init buffer size " << init_buffer_size
+                   << " for file " << file_name_ << " exceeds the maximum of "
+                   << kBufSize << " bytes; using the maximum.";
+      init_buffer_size = kBufSize;
+    }
     // Read enough bytes before detecting the container.
-    while (static_cast<size_t>(bytes_read) < kInitBufSize) {
-      int64_t read_result =
-          media_file_->Read(buffer_.get() + bytes_read, kInitBufSize);
+    while (static_cast<size_t>(bytes_read) < init_buffer_size) {
+      int64_t read_result = media_file_->Read(buffer_.get() + bytes_read,
+                                              init_buffer_size - bytes_read);
       if (read_result < 0)
         return Status(error::FILE_FAILURE, "Cannot read file " + file_name_);
       if (read_result == 0) {

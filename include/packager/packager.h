@@ -160,6 +160,13 @@ struct StreamDescriptor {
   /// its initial header.
   std::string input_format;
 
+  /// Optional value which specifies how many bytes are buffered before the
+  /// input container format is autodetected. If not specified or set to 0, a
+  /// default of 65536 bytes is used. A smaller value is useful for text
+  /// streams, which may need a long time to produce that much data. It has no
+  /// effect when `input_format` is specified.
+  uint32_t init_buffer_size = 0;
+
   /// Optional, indicates if this is a Forced Narrative subtitle stream.
   bool forced_subtitle = false;
 
