@@ -89,8 +89,11 @@ bool EsParserH265::ProcessNalu(const Nalu& nalu,
     }
     default: {
       if (nalu.is_vcl() && nalu.nuh_layer_id() == 0) {
+        // CRA pictures are random access points: a decoder can start decoding
+        // from them, dropping the associated RASL pictures.
         const bool is_key_frame = nalu.type() == Nalu::H265_IDR_W_RADL ||
-                                  nalu.type() == Nalu::H265_IDR_N_LP;
+                                  nalu.type() == Nalu::H265_IDR_N_LP ||
+                                  nalu.type() == Nalu::H265_CRA_NUT;
         DVLOG(LOG_LEVEL_ES) << "Nalu: slice KeyFrame=" << is_key_frame;
         H265SliceHeader shdr;
         auto status = h265_parser_->ParseSliceHeader(nalu, &shdr);
