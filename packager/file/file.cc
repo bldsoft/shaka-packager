@@ -73,6 +73,10 @@ File* CreateCallbackFile(const char* file_name, const char* mode) {
   return new CallbackFile(file_name, mode);
 }
 
+bool DeleteCallbackFile(const char* file_name) {
+  return CallbackFile::Delete(file_name);
+}
+
 File* CreateLocalFile(const char* file_name, const char* mode) {
   return new LocalFile(file_name, mode);
 }
@@ -163,7 +167,7 @@ static const FileTypeInfo kFileTypeInfo[] = {
     },
     {kUdpFilePrefix, &CreateUdpFile, nullptr, nullptr},
     {kMemoryFilePrefix, &CreateMemoryFile, &DeleteMemoryFile, nullptr},
-    {kCallbackFilePrefix, &CreateCallbackFile, nullptr, nullptr},
+    {kCallbackFilePrefix, &CreateCallbackFile, &DeleteCallbackFile, nullptr},
     {kHttpFilePrefix, &CreateHttpFile, &DeleteHttpFile, nullptr},
     {kHttpsFilePrefix, &CreateHttpsFile, &DeleteHttpsFile, nullptr},
 };
@@ -340,7 +344,9 @@ bool File::WriteFileAtomically(const char* file_name,
   // Also check for http files, as they can't do atomic writes.
   if (strncmp(file_name, kMemoryFilePrefix, strlen(kMemoryFilePrefix)) != 0 &&
       strncmp(file_name, kHttpFilePrefix, strlen(kHttpFilePrefix)) != 0 &&
-      strncmp(file_name, kHttpsFilePrefix, strlen(kHttpsFilePrefix)) != 0) {
+      strncmp(file_name, kHttpsFilePrefix, strlen(kHttpsFilePrefix)) != 0 &&
+      strncmp(file_name, kCallbackFilePrefix, strlen(kCallbackFilePrefix)) !=
+          0) {
     LOG(WARNING) << "Writing to " << file_name
                  << " is not guaranteed to be atomic.";
   }

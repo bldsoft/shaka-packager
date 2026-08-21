@@ -21,6 +21,7 @@ CallbackFile::CallbackFile(const char* file_name, const char* mode)
 CallbackFile::~CallbackFile() {}
 
 bool CallbackFile::Close() {
+  Flush();
   delete this;
   return true;
 }
@@ -44,13 +45,19 @@ int64_t CallbackFile::Write(const void* buffer, uint64_t length) {
 void CallbackFile::CloseForWriting() {}
 
 int64_t CallbackFile::Size() {
-  LOG(INFO) << "CallbackFile does not support Size().";
-  return -1;
+  if (!callback_params_->size_func) {
+    LOG(ERROR) << "Size function not defined.";
+    return -1;
+  }
+  return callback_params_->size_func(name_);
 }
 
 bool CallbackFile::Flush() {
-  // Do nothing on Flush.
-  return true;
+  // Unlike Size() and Delete(), an unset callback is not a failure here: there
+  // is nothing buffered on this side to flush.
+  if (!callback_params_->flush_func)
+    return true;
+  return callback_params_->flush_func(name_);
 }
 
 bool CallbackFile::Seek(uint64_t position) {
@@ -72,6 +79,19 @@ bool CallbackFile::Open() {
     return false;
   }
   return ParseCallbackFileName(file_name(), &callback_params_, &name_);
+}
+
+bool CallbackFile::Delete() {
+  if (!callback_params_->delete_func) {
+    LOG(ERROR) << "Delete function not defined.";
+    return false;
+  }
+  return callback_params_->delete_func(name_);
+}
+
+bool CallbackFile::Delete(const std::string& file_name) {
+  CallbackFile file(file_name.c_str(), "r");
+  return file.Open() && file.Delete();
 }
 
 }  // namespace shaka

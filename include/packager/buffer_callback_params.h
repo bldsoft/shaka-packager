@@ -30,6 +30,20 @@ struct BufferCallbackParams {
   std::function<
       int64_t(const std::string& name, const void* buffer, uint64_t size)>
       write_func;
+  /// If this function is specified, packager calls this function to query the
+  /// current size of the output referenced by @a name. It should return a
+  /// negative value if the size cannot be determined. Applies to the same
+  /// outputs as @a write_func.
+  std::function<int64_t(const std::string& name)> size_func;
+  /// If this function is specified, packager calls this function to delete the
+  /// output referenced by @a name. Applies to the same outputs as
+  /// @a write_func.
+  std::function<bool(const std::string& name)> delete_func;
+  /// If this function is specified, packager calls this function to flush the
+  /// data written for @a name. It is also called when the output is closed,
+  /// which makes it a suitable place to finalize @a name. Applies to the same
+  /// outputs as @a write_func.
+  std::function<bool(const std::string& name)> flush_func;
 };
 
 }  // namespace shaka

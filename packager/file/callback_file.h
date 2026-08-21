@@ -35,10 +35,17 @@ class CallbackFile : public File {
   bool Tell(uint64_t* position) override;
   /// @}
 
+  /// Deletes the output with the given callback file name by invoking
+  /// BufferCallbackParams::delete_func.
+  /// @param file_name is the callback file name with the file type prefix
+  ///        stripped off.
+  static bool Delete(const std::string& file_name);
+
  protected:
   ~CallbackFile() override;
 
   bool Open() override;
+  bool Delete();
 
  private:
   CallbackFile(const CallbackFile&) = delete;
