@@ -76,6 +76,17 @@ HLS options
     The EXT-X-MEDIA-SEQUENCE documentation can be read here:
     https://tools.ietf.org/html/rfc8216#section-4.3.3.2.
 
+--hls_discontinuity_sequence_number <unsigned_number>
+
+    Sets the initial EXT-X-DISCONTINUITY-SEQUENCE value in live playlists.
+
+    Like `hls_media_sequence_number` above, this is intended for packager
+    restarts: it allows the discontinuity sequence to continue from a previous
+    packager run instead of starting over from zero.
+
+    The EXT-X-DISCONTINUITY-SEQUENCE documentation can be read here:
+    https://tools.ietf.org/html/rfc8216#section-4.3.3.3.
+
 --hls_start_time_offset <seconds>
 
     Sets EXT-X-START on the media playlists to specify the preferred point

@@ -120,7 +120,7 @@ std::string CreatePlaylistHeader(
     HlsPlaylistType type,
     MediaPlaylist::MediaPlaylistStreamType stream_type,
     uint32_t media_sequence_number,
-    int discontinuity_sequence_number,
+    uint32_t discontinuity_sequence_number,
     std::optional<double> start_time_offset) {
   const std::string version = GetPackagerVersion();
   std::string version_line;
@@ -365,6 +365,7 @@ MediaPlaylist::MediaPlaylist(const HlsParams& hls_params,
       name_(name),
       group_id_(group_id),
       media_sequence_number_(hls_params_.media_sequence_number),
+      discontinuity_sequence_number_(hls_params_.discontinuity_sequence_number),
       reference_time_(absl::InfinitePast()) {
   // When there's a forced media_sequence_number, start with discontinuity
   if (media_sequence_number_ > 0)
@@ -830,8 +831,12 @@ void MediaPlaylist::RemoveOldSegment(int64_t start_time) {
   if (stream_type_ == MediaPlaylistStreamType::kVideoIFramesOnly)
     return;
 
+  // |media_sequence_number_| includes the forced initial EXT-X-MEDIA-SEQUENCE
+  // value, but the muxer numbers the segment files from the start of this
+  // packager run, so that offset has to be subtracted to get the file name.
   segments_to_be_removed_.push_back(media::GetSegmentName(
-      media_info_.segment_template(), start_time, media_sequence_number_ + 1,
+      media_info_.segment_template(), start_time,
+      media_sequence_number_ - hls_params_.media_sequence_number + 1,
       media_info_.bandwidth()));
   while (segments_to_be_removed_.size() >
          hls_params_.preserved_segments_outside_live_window) {

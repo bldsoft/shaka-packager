@@ -41,6 +41,12 @@ ABSL_FLAG(int32_t,
           "EXT-X-MEDIA-SEQUENCE value, which allows continuous media "
           "sequence across packager restarts. See #691 for more "
           "information about the reasoning of this and its use cases.");
+ABSL_FLAG(int32_t,
+          hls_discontinuity_sequence_number,
+          0,
+          "Number. This HLS-only parameter defines the initial "
+          "EXT-X-DISCONTINUITY-SEQUENCE value, which allows the discontinuity "
+          "sequence to continue across packager restarts.");
 ABSL_FLAG(std::optional<double>,
           hls_start_time_offset,
           std::nullopt,

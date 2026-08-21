@@ -70,6 +70,9 @@ struct HlsParams {
   /// Custom EXT-X-MEDIA-SEQUENCE value to allow continuous media playback
   /// across packager restarts. See #691 for details.
   uint32_t media_sequence_number = 0;
+  /// Initial EXT-X-DISCONTINUITY-SEQUENCE value to allow the discontinuity
+  /// sequence to continue across packager restarts.
+  uint32_t discontinuity_sequence_number = 0;
   /// Sets EXT-X-START on the media playlists to specify the preferred point
   /// at wich the player should start playing.
   /// A positive number indicates a time offset from the beginning of the
