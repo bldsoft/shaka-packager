@@ -80,6 +80,12 @@ struct PackagingParams {
   /// CEA-608 / CEA-708 captions.
   std::vector<CeaCaption> closed_captions;
 
+  /// Optional path of a file to write log messages to, in addition to the
+  /// destinations configured by the application. The file is appended to if it
+  /// already exists and every message is flushed, so the path may also be a
+  /// FIFO read by another process.
+  std::string log_file_path;
+
   // Parameters for testing. Do not use in production.
   TestParams test_params;
 };

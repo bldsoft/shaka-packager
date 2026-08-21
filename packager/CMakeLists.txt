@@ -137,6 +137,8 @@ set(libpackager_sources
 )
 
 set(libpackager_deps
+  absl::log_sink_registry
+  absl::synchronization
   file
   hls_builder
   media_chunking

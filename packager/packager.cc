@@ -7,10 +7,14 @@
 #include <packager/packager.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <ios>
 #include <map>
 #include <memory>
 #include <optional>
@@ -19,11 +23,16 @@
 #include <utility>
 #include <vector>
 
+#include <absl/base/thread_annotations.h>
 #include <absl/log/check.h>
 #include <absl/log/log.h>
+#include <absl/log/log_entry.h>
+#include <absl/log/log_sink.h>
+#include <absl/log/log_sink_registry.h>
 #include <absl/strings/ascii.h>
 #include <absl/strings/match.h>
 #include <absl/strings/str_format.h>
+#include <absl/synchronization/mutex.h>
 
 #include <packager/app/job_manager.h>
 #include <packager/app/muxer_factory.h>
@@ -881,7 +890,65 @@ Status CreateAllJobs(const std::vector<StreamDescriptor>& stream_descriptors,
 }  // namespace
 }  // namespace media
 
+namespace {
+
+// Abseil logging has no file destination of its own, so log entries are copied
+// to a file through a custom sink.
+class FileLogSink : public absl::LogSink {
+ public:
+  // Returns nullptr if |file_path| cannot be opened for writing.
+  static std::unique_ptr<FileLogSink> Create(const std::string& file_path) {
+    std::unique_ptr<FileLogSink> sink(new FileLogSink(file_path));
+    if (!sink->file_.is_open())
+      return nullptr;
+    absl::AddLogSink(sink.get());
+    sink->registered_ = true;
+    return sink;
+  }
+
+  ~FileLogSink() override { Close(); }
+
+  void Send(const absl::LogEntry& entry) override {
+    absl::MutexLock lock(mutex_);
+    // Flushing every entry keeps the log complete if the process dies, and it
+    // lets another process consume the entries as they are produced when the
+    // log file is a FIFO.
+    file_ << entry.text_message_with_prefix_and_newline() << std::flush;
+  }
+
+  void Flush() override {
+    absl::MutexLock lock(mutex_);
+    file_.flush();
+  }
+
+  // Stops receiving log entries and closes the file. Must not be called from a
+  // log statement, as abseil forbids unregistering a sink while dispatching to
+  // it.
+  void Close() {
+    if (registered_.exchange(false))
+      absl::RemoveLogSink(this);
+    absl::MutexLock lock(mutex_);
+    file_.close();
+  }
+
+ private:
+  explicit FileLogSink(const std::string& file_path)
+      : file_(std::filesystem::u8path(file_path), std::ios::app) {}
+
+  FileLogSink(const FileLogSink&) = delete;
+  FileLogSink& operator=(const FileLogSink&) = delete;
+
+  std::atomic<bool> registered_{false};
+  absl::Mutex mutex_;
+  std::ofstream file_ ABSL_GUARDED_BY(mutex_);
+};
+
+}  // namespace
+
 struct Packager::PackagerInternal {
+  // Destroyed last so that logs emitted while tearing down the other members
+  // still reach the log file.
+  std::unique_ptr<FileLogSink> log_sink;
   std::shared_ptr<media::FakeClock> fake_clock;
   std::unique_ptr<KeySource> encryption_key_source;
   std::unique_ptr<MpdNotifier> mpd_notifier;
@@ -900,14 +967,25 @@ Status Packager::Initialize(
   if (internal_)
     return Status(error::INVALID_ARGUMENT, "Already initialized.");
 
+  std::unique_ptr<PackagerInternal> internal(new PackagerInternal);
+
+  // Set up file logging before anything else, so that messages logged while
+  // validating the parameters end up in the log file too.
+  if (!packaging_params.log_file_path.empty()) {
+    internal->log_sink = FileLogSink::Create(packaging_params.log_file_path);
+    if (!internal->log_sink) {
+      return Status(
+          error::FILE_FAILURE,
+          "Failed to open log file " + packaging_params.log_file_path + ".");
+    }
+  }
+
   RETURN_IF_ERROR(media::ValidateParams(packaging_params, stream_descriptors));
 
   if (!packaging_params.test_params.injected_library_version.empty()) {
     SetPackagerVersionForTesting(
         packaging_params.test_params.injected_library_version);
   }
-
-  std::unique_ptr<PackagerInternal> internal(new PackagerInternal);
 
   // Create encryption key source if needed.
   if (packaging_params.encryption_params.key_provider != KeyProvider::kNone) {
@@ -1067,6 +1145,9 @@ void Packager::Cancel() {
     return;
   }
   internal_->job_manager->CancelJobs();
+
+  if (internal_->log_sink)
+    internal_->log_sink->Close();
 }
 
 std::string Packager::GetLibraryVersion() {
