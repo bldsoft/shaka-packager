@@ -33,8 +33,9 @@ Status WebVttMuxer::InitializeStream(TextStreamInfo* stream) {
   stream->set_codec_string("wvtt");
 
   const std::string preamble = WebVttGetPreamble(*stream);
-  buffer_.reset(new WebVttFileBuffer(
-      options().transport_stream_timestamp_offset_ms, preamble));
+  buffer_.reset(
+      new WebVttFileBuffer(options().transport_stream_timestamp_offset_ms,
+                           preamble, stream->time_scale()));
   return Status::OK;
 }
 

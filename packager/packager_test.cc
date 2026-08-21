@@ -502,20 +502,16 @@ TEST_F(TeletextSegmentAlignmentTest, VideoAndTextSegmentsAligned) {
   ASSERT_EQ(cue_start_times.size(), kExpectedCueStartTimes.size())
       << "Expected " << kExpectedCueStartTimes.size() << " cues in VTT";
 
-  // VTT times use PTS/1000 format (90kHz / 1000 = 90x actual seconds)
-  // This is intentional for MPEG-TS sync with X-TIMESTAMP-MAP header.
-  // We verify relative timing between cues is correct (scaled by 90)
-  constexpr double kVttTimescale = 90.0;  // VTT uses PTS/1000, so 90x actual
+  // VTT times are in seconds on the media timeline, i.e. the sample times
+  // converted from the stream time scale (90kHz for MPEG-TS).
+  constexpr double kTsTimescale = 90000.0;
 
-  // Convert first video PTS to VTT timescale for offset calculation
-  double first_video_vtt_time =
-      static_cast<double>(kExpectedFirstVideoPts) / 1000.0;
+  double first_video_seconds =
+      static_cast<double>(kExpectedFirstVideoPts) / kTsTimescale;
 
   // Verify each cue starts at the expected offset from video start
   for (size_t i = 0; i < cue_start_times.size(); ++i) {
-    // Convert VTT time to actual seconds: (vtt_time - video_vtt_time) / 90
-    double relative_cue_seconds =
-        (cue_start_times[i] - first_video_vtt_time) / kVttTimescale;
+    double relative_cue_seconds = cue_start_times[i] - first_video_seconds;
     EXPECT_NEAR(relative_cue_seconds, kExpectedCueStartTimes[i], 0.1)
         << "Cue " << i << " start time mismatch: "
         << "got " << relative_cue_seconds
@@ -652,20 +648,17 @@ TEST_F(TeletextSegmentAlignmentTest,
   ASSERT_EQ(cue_start_times.size(), kExpectedCueStartTimes.size())
       << "Expected " << kExpectedCueStartTimes.size() << " cues in VTT";
 
-  // VTT times use PTS/1000 format (90kHz / 1000 = 90x actual seconds)
-  // This is intentional for MPEG-TS sync with X-TIMESTAMP-MAP header.
-  constexpr double kVttTimescale = 90.0;  // VTT uses PTS/1000, so 90x actual
+  // VTT times are in seconds on the media timeline, i.e. the sample times
+  // converted from the stream time scale (90kHz for MPEG-TS).
+  constexpr double kTsTimescale = 90000.0;
 
-  // Convert first video PTS to VTT timescale for offset calculation
-  double first_video_vtt_time =
-      static_cast<double>(kExpectedFirstVideoPts) / 1000.0;
+  double first_video_seconds =
+      static_cast<double>(kExpectedFirstVideoPts) / kTsTimescale;
 
   // Verify each cue starts at the expected offset from video start
   // despite the PTS wrap-around
   for (size_t i = 0; i < cue_start_times.size(); ++i) {
-    // Convert VTT time to actual seconds: (vtt_time - video_vtt_time) / 90
-    double relative_cue_seconds =
-        (cue_start_times[i] - first_video_vtt_time) / kVttTimescale;
+    double relative_cue_seconds = cue_start_times[i] - first_video_seconds;
     EXPECT_NEAR(relative_cue_seconds, kExpectedCueStartTimes[i], 0.1)
         << "Cue " << i << " start time mismatch (wrap-around): "
         << "got " << relative_cue_seconds

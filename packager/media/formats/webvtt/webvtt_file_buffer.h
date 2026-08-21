@@ -23,7 +23,8 @@ class TextSample;
 class WebVttFileBuffer {
  public:
   WebVttFileBuffer(int32_t transport_stream_timestamp_offset_ms,
-                   const std::string& style_region_config);
+                   const std::string& style_region_config,
+                   int32_t time_scale);
   virtual ~WebVttFileBuffer() = default;
 
   void Reset();
@@ -40,6 +41,7 @@ class WebVttFileBuffer {
 
   const int32_t transport_stream_timestamp_offset_ = 0;
   const std::string style_region_config_;
+  const int32_t time_scale_ = 0;
   std::string buffer_;
   size_t sample_count_ = 0;
 };
