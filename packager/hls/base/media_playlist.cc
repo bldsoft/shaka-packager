@@ -606,8 +606,11 @@ bool MediaPlaylist::GetDisplayResolution(uint32_t* width,
             ? static_cast<double>(media_info_.video_info().pixel_width()) /
                   media_info_.video_info().pixel_height()
             : 1.0;
-    *width = static_cast<uint32_t>(media_info_.video_info().width() *
-                                   pixel_aspect_ratio);
+    const uint32_t nearest_width = static_cast<uint32_t>(
+        std::nearbyint(media_info_.video_info().width() * pixel_aspect_ratio));
+
+    // Some players cannot handle an odd width.
+    *width = nearest_width % 2 == 0 ? nearest_width : nearest_width + 1;
     *height = media_info_.video_info().height();
     return true;
   }

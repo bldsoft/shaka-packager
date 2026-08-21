@@ -160,7 +160,8 @@ TEST_F(MediaPlaylistMultiSegmentTest, GetDisplayResolution) {
   uint32_t width = 0;
   uint32_t height = 0;
   EXPECT_TRUE(media_playlist_->GetDisplayResolution(&width, &height));
-  EXPECT_EQ(1921u, width);
+  // 1920 * 1636 / 1635 is 1921.2, which is rounded up to an even width.
+  EXPECT_EQ(1922u, width);
   EXPECT_EQ(818u, height);
 }
 
