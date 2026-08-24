@@ -193,7 +193,9 @@ const FileTypeInfo* GetFileTypeInfo(std::string_view file_name,
 
 }  // namespace
 
-File* File::Create(const char* file_name, const char* mode) {
+File* File::Create(const char* file_name,
+                   const char* mode,
+                   uint64_t io_block_size) {
   std::unique_ptr<File, FileCloser> internal_file(
       CreateInternalFile(file_name, mode));
 
@@ -205,17 +207,17 @@ File* File::Create(const char* file_name, const char* mode) {
   }
 
   if (absl::GetFlag(FLAGS_io_cache_size)) {
+    const uint64_t block_size =
+        io_block_size ? io_block_size : absl::GetFlag(FLAGS_io_block_size);
     // Enable threaded I/O for "r", "w", and "a" modes only.
     if (!strcmp(mode, "r")) {
       return new ThreadedIoFile(std::move(internal_file),
                                 ThreadedIoFile::kInputMode,
-                                absl::GetFlag(FLAGS_io_cache_size),
-                                absl::GetFlag(FLAGS_io_block_size));
+                                absl::GetFlag(FLAGS_io_cache_size), block_size);
     } else if (!strcmp(mode, "w") || !strcmp(mode, "a")) {
       return new ThreadedIoFile(std::move(internal_file),
                                 ThreadedIoFile::kOutputMode,
-                                absl::GetFlag(FLAGS_io_cache_size),
-                                absl::GetFlag(FLAGS_io_block_size));
+                                absl::GetFlag(FLAGS_io_cache_size), block_size);
     }
   }
 
@@ -232,8 +234,10 @@ File* File::CreateInternalFile(const char* file_name, const char* mode) {
   return file_type->factory_function(real_file_name.data(), mode);
 }
 
-File* File::Open(const char* file_name, const char* mode) {
-  File* file = File::Create(file_name, mode);
+File* File::Open(const char* file_name,
+                 const char* mode,
+                 uint64_t io_block_size) {
+  File* file = File::Create(file_name, mode, io_block_size);
   if (!file)
     return NULL;
   if (!file->Open()) {

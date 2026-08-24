@@ -43,6 +43,7 @@ namespace {
 // 65KB, sufficient to determine the container and likely all init data.
 const size_t kInitBufSize = 0x10000;
 const size_t kBufSize = 0x200000;  // 2MB
+const uint64_t kTextIoBlockSize = 256;
 // Maximum number of allowed queued samples. If we are receiving a lot of
 // samples before seeing init_event, something is not right. The number
 // set here is arbitrary though.
@@ -169,7 +170,12 @@ Status Demuxer::InitializeParser() {
 
   LOG(INFO) << "Initialize Demuxer for file '" << file_name_ << "'.";
 
-  media_file_ = File::Open(file_name_.c_str(), "r");
+  if (!input_format_.empty())
+    container_name_ = DetermineContainerFromFormatName(input_format_);
+
+  const uint64_t io_block_size =
+      container_name_ == CONTAINER_WEBVTT ? kTextIoBlockSize : 0;
+  media_file_ = File::Open(file_name_.c_str(), "r", io_block_size);
   if (!media_file_) {
     return Status(error::FILE_FAILURE,
                   "Cannot open file for reading " + file_name_);
@@ -199,8 +205,6 @@ Status Demuxer::InitializeParser() {
       bytes_read += read_result;
     }
     container_name_ = DetermineContainer(buffer_.get(), bytes_read);
-  } else {
-    container_name_ = DetermineContainerFromFormatName(input_format_);
   }
 
   // Initialize media parser.

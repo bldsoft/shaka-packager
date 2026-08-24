@@ -31,8 +31,14 @@ class SHAKA_EXPORT File {
   /// based on prefix, e.g. "file://" for LocalFile.
   /// @param file_name contains the name of the file to be accessed.
   /// @param mode contains file access mode. Implementation dependent.
+  /// @param io_block_size is the size of the block used for threaded I/O, in
+  ///        bytes. If set to 0, the value of the --io_block_size flag is used.
+  ///        A smaller block reduces the delay before the data of a slowly
+  ///        produced stream, e.g. a text stream, becomes available.
   /// @return A File pointer on success, false otherwise.
-  static File* Open(const char* file_name, const char* mode);
+  static File* Open(const char* file_name,
+                    const char* mode,
+                    uint64_t io_block_size = 0);
 
   /// Open the specified file in direct-access mode (no buffering).
   /// This is a file factory method, it opens a proper file automatically
@@ -188,7 +194,9 @@ class SHAKA_EXPORT File {
 
   // This is a file factory method, it creates a proper file, e.g.
   // LocalFile, MemFile based on prefix.
-  static File* Create(const char* file_name, const char* mode);
+  static File* Create(const char* file_name,
+                      const char* mode,
+                      uint64_t io_block_size);
 
   static File* CreateInternalFile(const char* file_name, const char* mode);
 

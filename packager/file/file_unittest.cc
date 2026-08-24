@@ -212,6 +212,34 @@ TEST_F(LocalFileTest, WriteRead) {
   EXPECT_EQ(data_, read_data);
 }
 
+TEST_F(LocalFileTest, WriteReadWithCustomIoBlockSize) {
+  const uint64_t kCustomIoBlockSize(64);
+
+  FlagSaver<uint64_t> local_backup_io_block_size(&FLAGS_io_block_size);
+  FlagSaver<uint64_t> local_backup_io_cache_size(&FLAGS_io_cache_size);
+  absl::SetFlag(&FLAGS_io_block_size, kDataSize * 4);
+  absl::SetFlag(&FLAGS_io_cache_size, kDataSize);
+
+  File* file = File::Open(local_file_name_.c_str(), "w", kCustomIoBlockSize);
+  ASSERT_TRUE(file != nullptr);
+  EXPECT_EQ(kDataSize, file->Write(&data_[0], kDataSize));
+  EXPECT_TRUE(file->Close());
+
+  file = File::Open(local_file_name_.c_str(), "r", kCustomIoBlockSize);
+  ASSERT_TRUE(file != nullptr);
+  std::string read_data(kDataSize, 0);
+  int64_t bytes_read = 0;
+  while (bytes_read < kDataSize) {
+    int64_t read_result =
+        file->Read(&read_data[bytes_read], kDataSize - bytes_read);
+    ASSERT_GT(read_result, 0);
+    bytes_read += read_result;
+  }
+  EXPECT_TRUE(file->Close());
+
+  EXPECT_EQ(data_, read_data);
+}
+
 TEST_F(LocalFileTest, WriteStringReadString) {
   ASSERT_TRUE(
       File::WriteStringToFile(local_file_name_no_prefix_.c_str(), data_));
