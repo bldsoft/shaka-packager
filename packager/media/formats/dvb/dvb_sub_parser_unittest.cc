@@ -315,5 +315,102 @@ TEST_F(DvbSubParserTest, BasicFlow) {
   EXPECT_EQ(samples[1]->settings().height->value, 3);
 }
 
+TEST_F(DvbSubParserTest, TwoBitMaximumRunLength) {
+  // The run_length_29-284 code can describe more pixels than fit in a uint8_t
+  // counter.
+  constexpr const uint16_t kRunLength = 284;
+
+  constexpr const uint8_t kDisplayDefinitionSegment[] = {
+      // clang-format off
+      0x00,        // dds_version_number(4) | display_window_flag(1) |
+                   //   reserved(3)
+      0x01, 0x3f,  // display_width
+      0x00, 0x63,  // display_height
+      // clang-format on
+  };
+  constexpr const uint8_t kPageCompositionSegment[] = {
+      // clang-format off
+      0x02,        // page_time_out
+      0x04,        // page_version_number(4) | page_state(2) | reserved(2)
+      kRegionId,   // region_id
+      0x00,        // reserved
+      0x00, 0x00,  // region_horizontal_address
+      0x00, 0x00,  // region_vertical_address
+      // clang-format on
+  };
+  constexpr const uint8_t kRegionCompositionSegment[] = {
+      // clang-format off
+      kRegionId,   // region_id
+      0x08,        // region_version_number(4) | region_fill_flag(1) |
+                   //   reserved(3)
+      0x01, 0x2c,  // region_width
+      0x00, 0x04,  // region_height
+      0x6c,        // region_level_of_compatibility(3) | region_depth(3) |
+                   //   reserved(2)
+      kClutId,     // CLUT_id
+      0x02,        // region_8-bit_pixel_code
+      0x28,        // region_4-bit_pixel_code(4) | region_2-bit_pixel_code(2) |
+                   //   reserved(2)
+
+      0x00, kObjectId1,  // object_id
+      0x00, 0x00,        // object_type(2) | object_provider_flag(2) |
+                         //   object_horizontal_position(12)
+      0x00, 0x00,        // reserved(4) | object_vertical_position(12)
+      // clang-format on
+  };
+  constexpr const uint8_t kClutDefinitionSegment[] = {
+      // clang-format off
+      kClutId,  // CLUT_id
+      0x00,     // CLUT_version_number(4) | reserved(4)
+
+      0x01,  // CLUT_entry_id
+      0x81,  // flags (2-bit,full-range)
+      70, 141, 117, 0,
+
+      0x02,  // CLUT_entry_id
+      0x21,  // flags (8-bit,full-range)
+      100, 128, 127, 0,
+      // clang-format on
+  };
+  // A single row holding one run of |kRunLength| pixels of colour 1, followed
+  // by the end-of-string code.
+  const auto kObjectData = GenerateObjectData(
+      kObjectId1, {{0x10,
+                    {
+                        "00", "0", "0", "11", "11111111", "01",  // run
+                        "00", "0", "0", "00",                    // end of data
+                    }}});
+
+  DvbSubParser parser;
+  std::vector<std::shared_ptr<TextSample>> samples;
+  ASSERT_TRUE(parser.Parse(DvbSubSegmentType::kDisplayDefinition, kNoPts,
+                           kDisplayDefinitionSegment,
+                           sizeof(kDisplayDefinitionSegment), &samples));
+  ASSERT_TRUE(parser.Parse(DvbSubSegmentType::kPageComposition, kNoPts,
+                           kPageCompositionSegment,
+                           sizeof(kPageCompositionSegment), &samples));
+  ASSERT_TRUE(parser.Parse(DvbSubSegmentType::kRegionComposition, kNoPts,
+                           kRegionCompositionSegment,
+                           sizeof(kRegionCompositionSegment), &samples));
+  ASSERT_TRUE(parser.Parse(DvbSubSegmentType::kClutDefinition, kNoPts,
+                           kClutDefinitionSegment,
+                           sizeof(kClutDefinitionSegment), &samples));
+  ASSERT_TRUE(parser.Parse(DvbSubSegmentType::kObjectData, kNoPts,
+                           kObjectData.data(), kObjectData.size(), &samples));
+
+  const RgbaColor* pixels;
+  uint16_t width, height;
+  auto* color_space = GetColorSpace(&parser, kClutId);
+  auto* image = GetImage(&parser, kObjectId1);
+  ASSERT_TRUE(image);
+  ASSERT_TRUE(color_space);
+  ASSERT_TRUE(image->GetPixels(&pixels, &width, &height));
+  EXPECT_EQ(width, kRunLength);
+
+  const auto expected_color = color_space->GetColor(BitDepth::k2Bit, 1);
+  for (uint16_t x = 0; x < width; x++)
+    EXPECT_EQ(pixels[x], expected_color) << "X=" << x;
+}
+
 }  // namespace media
 }  // namespace shaka
