@@ -73,6 +73,24 @@ TEST(SubtitleComposerTest, PositionsSamples) {
   }
 }
 
+TEST(SubtitleComposerTest, SizesObjectImageRelativeToObjectOffset) {
+  const uint8_t kRegionId = 1, kColorSpaceId = 2;
+  const uint16_t kObjectId = 5;
+
+  SubtitleComposer composer;
+  composer.SetDisplaySize(100, 100);
+  ASSERT_TRUE(composer.SetRegionPosition(kRegionId, 40, 30));
+  ASSERT_TRUE(composer.SetRegionInfo(kRegionId, kColorSpaceId, 50, 40));
+  ASSERT_TRUE(composer.SetObjectInfo(kObjectId, kRegionId, 10, 5, kNoBgColor));
+
+  auto* image = composer.GetObjectImage(kObjectId);
+  ASSERT_TRUE(image);
+  // The image must fit the remainder of the region, not depend on where the
+  // region itself is placed on the display.
+  EXPECT_EQ(image->max_width(), 40);
+  EXPECT_EQ(image->max_height(), 35);
+}
+
 TEST(SubtitleComposerTest, EnsuresRegionsFit) {
   SubtitleComposer composer;
   composer.SetDisplaySize(0xfff0, 0xfff0);

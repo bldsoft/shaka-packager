@@ -203,11 +203,11 @@ DvbImageBuilder* SubtitleComposer::GetObjectImage(uint16_t object_id) {
                      : info->second.region->color_space->GetColor(
                            BitDepth::k8Bit, info->second.default_color_code);
     it = images_
-             .emplace(std::piecewise_construct, std::make_tuple(object_id),
-                      std::make_tuple(
-                          info->second.region->color_space, color,
-                          info->second.region->width - info->second.region->x,
-                          info->second.region->height - info->second.region->y))
+             .emplace(
+                 std::piecewise_construct, std::make_tuple(object_id),
+                 std::make_tuple(info->second.region->color_space, color,
+                                 info->second.region->width - info->second.x,
+                                 info->second.region->height - info->second.y))
              .first;
   }
   return &it->second;
