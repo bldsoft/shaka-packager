@@ -19,6 +19,10 @@ namespace media {
 const int kSimpleProfile = 0;
 const int kBaseProfile = 1;
 
+TEST(AudioStreamInfo, Mp3GetCodecString) {
+  EXPECT_EQ("mp4a.40.34", AudioStreamInfo::GetCodecString(kCodecMP3, 0));
+}
+
 TEST(AudioStreamInfo, IamfGetCodecStringForSimpleProfilesAndPcm) {
   const uint8_t audio_object_type =
       ((kSimpleProfile << 6) |              // primary_profile

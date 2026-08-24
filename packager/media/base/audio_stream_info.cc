@@ -211,7 +211,10 @@ std::string AudioStreamInfo::GetCodecString(Codec codec,
     case kCodecOpus:
       return "opus";
     case kCodecMP3:
-      return "mp3";
+      // Some devices, notably Apple ones, only recognize MPEG-1 Layer 3 audio
+      // when it is signalled with the MPEG-4 audio object type 34. See
+      // https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/StreamingMediaGuide/FrequentlyAskedQuestions/FrequentlyAskedQuestions.html
+      return "mp4a.40.34";
     case kCodecVorbis:
       return "vorbis";
     case kCodecMha1:
