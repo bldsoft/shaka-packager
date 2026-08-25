@@ -86,7 +86,13 @@ int64_t LocalFile::Size() {
   auto file_path = std::filesystem::u8path(file_name());
   int64_t file_size = std::filesystem::file_size(file_path, ec);
   if (ec) {
-    LOG(ERROR) << "Cannot get file size, error: " << ec;
+    std::error_code type_ec;
+    if (!std::filesystem::is_regular_file(file_path, type_ec) && !type_ec) {
+      VLOG(1) << "Cannot get size of non-regular file '" << file_name()
+              << "', error: " << ec;
+    } else {
+      LOG(ERROR) << "Cannot get file size, error: " << ec;
+    }
     return -1;
   }
   return file_size;
