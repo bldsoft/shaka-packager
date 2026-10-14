@@ -86,9 +86,7 @@ TsSectionPes::TsSectionPes(std::unique_ptr<EsParser> es_parser)
     : es_parser_(es_parser.release()),
       wait_for_pusi_(true),
       previous_pts_valid_(false),
-      previous_pts_(0),
-      previous_dts_valid_(false),
-      previous_dts_(0) {
+      previous_pts_(0) {
   DCHECK(es_parser_);
 }
 
@@ -142,8 +140,6 @@ void TsSectionPes::Reset() {
 
   previous_pts_valid_ = false;
   previous_pts_ = 0;
-  previous_dts_valid_ = false;
-  previous_dts_ = 0;
 
   es_parser_->Reset();
 }
@@ -283,11 +279,7 @@ bool TsSectionPes::ParseInternal(const uint8_t* raw_pes, int raw_pes_size) {
   }
   if (is_dts_valid) {
     int64_t dts = ConvertTimestampSectionToTimestamp(dts_section);
-    if (previous_dts_valid_)
-      dts = UnrollTimestamp(previous_dts_, dts);
-    previous_dts_ = dts;
-    previous_dts_valid_ = true;
-    media_dts = dts;
+    media_dts = UnrollTimestamp(media_pts, dts);
   }
 
   // Discard the rest of the PES packet header.

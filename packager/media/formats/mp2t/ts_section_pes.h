@@ -50,11 +50,9 @@ class TsSectionPes : public TsSection {
   // Do not start parsing before getting a unit start indicator.
   bool wait_for_pusi_;
 
-  // Used to unroll PTS and DTS.
+  // Used to unroll PTS. DTS is unrolled against the PTS of the same PES.
   bool previous_pts_valid_;
   int64_t previous_pts_;
-  bool previous_dts_valid_;
-  int64_t previous_dts_;
 
   DISALLOW_COPY_AND_ASSIGN(TsSectionPes);
 };

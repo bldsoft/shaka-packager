@@ -82,6 +82,7 @@
         'mpeg1_header_unittest.cc',
         'pes_packet_generator_unittest.cc',
         'program_map_table_writer_unittest.cc',
+        'ts_section_pes_unittest.cc',
         'ts_segmenter_unittest.cc',
         'ts_writer_unittest.cc',
       ],
