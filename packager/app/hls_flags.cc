@@ -64,5 +64,6 @@ ABSL_FLAG(bool,
 ABSL_FLAG(bool,
           add_program_date_time,
           false,
-          "Add EXT-X-PROGRAM-DATE-TIME tag to the playlist. The date time is "
-          "derived from the current wall clock time.");
+          "Add EXT-X-PROGRAM-DATE-TIME tags to media playlists. The time is "
+          "the wall clock at media timestamp 0 plus the segment timestamp. "
+          "A tag is written immediately before every media segment.");

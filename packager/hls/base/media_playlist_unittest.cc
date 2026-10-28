@@ -818,6 +818,43 @@ TEST_F(LiveMediaPlaylistTest, TimeShifted) {
   ASSERT_FILE_STREQ(kMemoryFilePath, kExpectedOutput);
 }
 
+TEST_F(LiveMediaPlaylistTest, ProgramDateTimeAfterWindowSlide) {
+  mutable_hls_params()->add_program_date_time = true;
+
+  absl::Time reference_time;
+  std::string err;
+  bool ok = absl::ParseTime("%Y-%m-%dT%H:%M:%E3SZ", "2025-10-12T14:00:00.000Z",
+                            &reference_time, &err);
+  ASSERT_TRUE(ok) << err;
+  media_playlist_->SetReferenceTime(reference_time);
+
+  ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
+
+  media_playlist_->AddSegment("file1.ts", 0, 10 * kTimeScale, kZeroByteOffset,
+                              kMBytes);
+  media_playlist_->AddSegment("file2.ts", 10 * kTimeScale, 20 * kTimeScale,
+                              kZeroByteOffset, 2 * kMBytes);
+  media_playlist_->AddSegment("file3.ts", 30 * kTimeScale, 20 * kTimeScale,
+                              kZeroByteOffset, 2 * kMBytes);
+  const char kExpectedOutput[] =
+      "#EXTM3U\n"
+      "#EXT-X-VERSION:6\n"
+      "## Generated with https://github.com/shaka-project/shaka-packager "
+      "version test\n"
+      "#EXT-X-TARGETDURATION:20\n"
+      "#EXT-X-MEDIA-SEQUENCE:1\n"
+      "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:10.000Z\n"
+      "#EXTINF:20.000,\n"
+      "file2.ts\n"
+      "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:30.000Z\n"
+      "#EXTINF:20.000,\n"
+      "file3.ts\n";
+
+  const char kMemoryFilePath[] = "memory://media.m3u8";
+  EXPECT_TRUE(media_playlist_->WriteToFile(kMemoryFilePath, false, false));
+  ASSERT_FILE_STREQ(kMemoryFilePath, kExpectedOutput);
+}
+
 TEST_F(LiveMediaPlaylistTest, TimeShiftedWithEncryptionInfo) {
   ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
 
@@ -1311,6 +1348,8 @@ TEST_F(MediaPlaylistMultiSegmentTest, ProgramDateTime) {
   ASSERT_TRUE(media_playlist_->SetMediaInfo(valid_video_media_info_));
   media_playlist_->AddSegment("file1.ts", 0, 10 * kTimeScale, kZeroByteOffset,
                               kMBytes);
+  media_playlist_->AddSegment("file2.ts", 10 * kTimeScale, 10 * kTimeScale,
+                              kZeroByteOffset, kMBytes);
 
   const char kExpectedOutput[] =
       "#EXTM3U\n"
@@ -1322,6 +1361,9 @@ TEST_F(MediaPlaylistMultiSegmentTest, ProgramDateTime) {
       "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:00.000Z\n"
       "#EXTINF:10.000,\n"
       "file1.ts\n"
+      "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:10.000Z\n"
+      "#EXTINF:10.000,\n"
+      "file2.ts\n"
       "#EXT-X-ENDLIST\n";
 
   const char kMemoryFilePath[] = "memory://media.m3u8";
@@ -1350,7 +1392,7 @@ TEST_F(MediaPlaylistMultiSegmentTest, ProgramDateTimeWithDiscontinuity) {
       "", "");
   media_playlist_->AddSegment("file2.ts", 25 * kTimeScale, 10 * kTimeScale,
                               kZeroByteOffset, kMBytes);
-  media_playlist_->AddSegment("file3.ts", 25 * kTimeScale, 10 * kTimeScale,
+  media_playlist_->AddSegment("file3.ts", 35 * kTimeScale, 10 * kTimeScale,
                               kZeroByteOffset, kMBytes);
 
   const char kExpectedOutput[] =
@@ -1368,6 +1410,7 @@ TEST_F(MediaPlaylistMultiSegmentTest, ProgramDateTimeWithDiscontinuity) {
       "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:25.000Z\n"
       "#EXTINF:10.000,\n"
       "file2.ts\n"
+      "#EXT-X-PROGRAM-DATE-TIME:2025-10-12T14:00:35.000Z\n"
       "#EXTINF:10.000,\n"
       "file3.ts\n"
       "#EXT-X-ENDLIST\n";
